@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net461</TargetFrameworks>
+    <PackageId>Orangebeard.SpecFlow</PackageId>
+    <Version>1.0.0.0</Version>
+    
+    <Description>Plugin to output SpecFlow test logging into Orangebeard</Description>
+    <Authors>Team Soju</Authors>
+    <PackageTags>orangebeard specflow logging testresults</PackageTags>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageIcon>beard.png</PackageIcon>
+    <PackageProjectUrl>https://orangebeard.io</PackageProjectUrl>
+
+    <RepositoryType>GitHub</RepositoryType>
+    <RepositoryUrl>https://github.com/orangebeard-io/SpecFlow-Plugin</RepositoryUrl>
+
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+
+    <Company>Oramgebeard.io</Company>
+
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Orangebeard.Client" Version="1.1.0.11" />
+    <PackageReference Include="SpecFlow" Version="3.7.13" />
+  </ItemGroup>
+
+  <ItemGroup>
+
+    <None Include="..\..\beard.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+</Project>
