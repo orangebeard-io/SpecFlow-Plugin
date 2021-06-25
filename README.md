@@ -2,10 +2,10 @@
   <a href="https://github.com/orangebeard-io/SpecFlow-Plugin">
     <img src="https://raw.githubusercontent.com/orangebeard-io/SpecFlow-Plugin/master/.github/logo.svg" alt="Orangebeard.io FitNesse TestSystemListener" height="200">
   </a>
-  <br>Orangebeard.io VsTest Logger<br>
+  <br>Orangebeard.io SpecFlow Plugin<br>
 </h1>
 
-<h4 align="center">A Report Logger to report Specflow tests in Orangebeard.</h4>
+<h4 align="center">A Plugin to report Specflow tests in Orangebeard.</h4>
 
 <p align="center">
   <a href="https://github.com/orangebeard-io/SpecFlow-Plugin/blob/master/LICENSE.txt">
