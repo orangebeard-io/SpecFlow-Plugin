@@ -2,7 +2,7 @@
   <a href="https://github.com/orangebeard-io/SpecFlow-Plugin">
     <img src="https://raw.githubusercontent.com/orangebeard-io/SpecFlow-Plugin/master/.github/logo.svg" alt="Orangebeard.io FitNesse TestSystemListener" height="200">
   </a>
-  <br>Orangebeard.io VsTest Logger<br>
+  <br>Orangebeard.io SpecFlow Plug in<br>
 </h1>
 
 <h4 align="center">A Report Logger to report Specflow tests in Orangebeard.</h4>
@@ -29,8 +29,7 @@
  * Build the Plugin DLL
 
 ## Install
-
- * Reference the Plugin in your Solution, make sure it is copied to your output directory
+ * Reference the Plugin in your Solution, make sure it is copied to your output directory (You can find the Plugin on Nuget!)
  * Add hooks file (see HooksExample.cs)
  * create Orangebeard.config.json (and set it to copy to output dir):
 
@@ -54,5 +53,5 @@
 
 ```
 
-Now run your test as you normally do and see the results fly in to Orangebeard!
+Now run your test as you normally do and see the results find their way to Orangebeard!
 
