@@ -1,6 +1,6 @@
 <h1 align="center">
   <a href="https://github.com/orangebeard-io/SpecFlow-Plugin">
-    <img src="https://raw.githubusercontent.com/orangebeard-io/SpecFlow-Plugin/master/.github/logo.svg" alt="Orangebeard.io FitNesse TestSystemListener" height="200">
+    <img src="https://raw.githubusercontent.com/orangebeard-io/SpecFlow-Plugin/main/.github/logo.svg" alt="Orangebeard.io FitNesse TestSystemListener" height="200">
   </a>
   <br>Orangebeard.io SpecFlow Plugin<br>
 </h1>
