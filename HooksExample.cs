@@ -41,7 +41,7 @@ namespace Example.SpecFlow.Hooks
                     Comment = "my custom system error comment"
                 };
             }
-            // put scenario failure reason into RP defect comment
+            // Add message to defect comment
             else if (e.ScenarioContext.TestError != null)
             {
                 e.FinishTestItemRequest.Issue = new Issue

@@ -8,7 +8,7 @@
 <h4 align="center">A Plugin to report Specflow tests in Orangebeard.</h4>
 
 <p align="center">
-  <a href="https://github.com/orangebeard-io/SpecFlow-Plugin/blob/master/LICENSE.txt">
+  <a href="https://github.com/orangebeard-io/SpecFlow-Plugin/blob/main/LICENSE.txt">
     <img src="https://img.shields.io/github/license/orangebeard-io/SpecFlow-Plugin?style=flat-square"
       alt="License" />
   </a>
@@ -30,11 +30,11 @@
 
 ## Install
  * Reference the Plugin in your Solution, make sure it is copied to your output directory (You can find the Plugin on Nuget!)
- * Add hooks file (see HooksExample.cs)
+ * Optional: Add hooks file for custom runtime hooks (see HooksExample.cs)
  * create Orangebeard.config.json (and set it to copy to output dir):
 
 ```json
-    {
+{
   "enabled": true,
   "server": {
     "url": "https://my.orangebeard.app/",

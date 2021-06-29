@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net461</TargetFrameworks>
+    <TargetFrameworks>net461;netstandard2.1;netcoreapp3.1</TargetFrameworks>
     <PackageId>Orangebeard.SpecFlow</PackageId>
     <Version>1.0.0.1</Version>
     
@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Orangebeard.Client" Version="1.1.0.11" />
+    <PackageReference Include="Orangebeard.Client" Version="1.1.0.12" />
     <PackageReference Include="SpecFlow" Version="3.7.13" />
   </ItemGroup>
 
