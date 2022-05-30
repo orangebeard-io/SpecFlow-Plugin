@@ -23,13 +23,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Orangebeard.Client" Version="1.1.0.12" />
-    <PackageReference Include="SpecFlow" Version="3.7.13" />
+    <PackageReference Include="SpecFlow" Version="3.9.74" />
   </ItemGroup>
 
   <ItemGroup>
 
     <None Include="..\..\beard.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\..\DEVELOPMENT\Orangebeard\RanorexListener\dotnet-client\src\Orangebeard.Client\bin\Debug\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Orangebeard.Client">
+      <HintPath>..\..\..\..\..\..\..\DEVELOPMENT\Orangebeard\RanorexListener\dotnet-client\src\Orangebeard.Client\bin\Debug\net45\Orangebeard.Client.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

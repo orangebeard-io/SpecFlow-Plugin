@@ -1,10 +1,12 @@
 ﻿using Orangebeard.Client.Abstractions.Models;
 using Orangebeard.Client.Abstractions.Requests;
+using Orangebeard.Client.Entities;
 using Orangebeard.Shared.Execution.Logging;
 using Orangebeard.Shared.Extensibility;
 using Orangebeard.Shared.Extensibility.Commands;
 using Orangebeard.Shared.Internal.Logging;
 using Orangebeard.Shared.Reporter;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using TechTalk.SpecFlow;
@@ -26,7 +28,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
         {
             var logScope = args.LogScope;
 
-            ITestReporter testReporter;
+            Guid? testReporter;
 
             if (logScope != null && OrangebeardAddIn.LogScopes.ContainsKey(logScope.Id))
             {
@@ -59,7 +61,9 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
                 HasStats = false
             };
 
-            ITestReporter testReporter = null;
+
+
+            Guid? testReporter = null;
 
             if (logScope.Parent != null)
             {
@@ -147,7 +151,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
         }
 
-        public ITestReporter GetCurrentTestReporter()
+        public Guid? GetCurrentTestReporter()
         {
             var testReporter = OrangebeardAddIn.GetStepTestReporter(ActiveStepContext);
 
@@ -165,10 +169,10 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
         }
 
         private Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
-            { LogScopeStatus.InProgress, Status.InProgress },
-            { LogScopeStatus.Passed, Status.Passed },
-            { LogScopeStatus.Failed, Status.Failed },
-            { LogScopeStatus.Skipped,Status.Skipped }
+            { LogScopeStatus.InProgress, Status.IN_PROGRESS },
+            { LogScopeStatus.Passed, Status.PASSED },
+            { LogScopeStatus.Failed, Status.FAILED },
+            { LogScopeStatus.Skipped,Status.SKIPPED }
         };
     }
 }

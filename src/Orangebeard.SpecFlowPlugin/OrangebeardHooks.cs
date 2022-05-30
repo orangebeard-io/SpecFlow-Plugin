@@ -8,15 +8,17 @@ using System.Text;
 using Orangebeard.Client;
 using Orangebeard.Client.Abstractions;
 using Orangebeard.Client.Abstractions.Models;
-using Orangebeard.Client.Abstractions.Requests;
+//using Orangebeard.Client.Abstractions.Requests;
+using Orangebeard.Client.Entities;
 using Orangebeard.Client.OrangebeardProperties;
 using Orangebeard.Shared.Configuration;
 using Orangebeard.Shared.Internal.Logging;
-using Orangebeard.Shared.Reporter;
+//using Orangebeard.Shared.Reporter;
 using Orangebeard.SpecFlowPlugin.EventArguments;
 using Orangebeard.SpecFlowPlugin.Extensions;
 using Orangebeard.SpecFlowPlugin.LogHandler;
 using TechTalk.SpecFlow;
+using Attribute = Orangebeard.Client.Entities.Attribute;
 
 namespace Orangebeard.SpecFlowPlugin
 {
@@ -25,8 +27,10 @@ namespace Orangebeard.SpecFlowPlugin
     {
         private static readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<OrangebeardHooks>();
 
-        private static IClientService _service;
-        private static ILaunchReporter _launchReporter;
+        //private static IClientService _service;
+        private static OrangebeardV2Client _service;
+        //private static ILaunchReporter _launchReporter;
+        private static Guid testRunUuid;
 
         [BeforeTestRun(Order = -20000)]
         public static void BeforeTestRun()
@@ -35,22 +39,22 @@ namespace Orangebeard.SpecFlowPlugin
             {
                 var config = Initialize();
 
-                var request = new StartLaunchRequest
-                {
-                    Name = config.GetValue(ConfigurationPath.TestSetName, "SpecFlow Launch"),
-                    StartTime = DateTime.UtcNow
-                };
-               
-
-                request.Attributes = config.GetKeyValues("TestSet:Attributes", new List<KeyValuePair<string, string>>()).Select(a => new ItemAttribute { Key = a.Key, Value = a.Value }).ToList();
-                request.Description = config.GetValue(ConfigurationPath.TestSetDescription, string.Empty);
+                //var request = new StartLaunchRequest
+                //{
+                //    Name = config.GetValue(ConfigurationPath.TestSetName, "SpecFlow Launch"),
+                //    StartTime = DateTime.UtcNow
+                //};
+                string name = config.GetValue(ConfigurationPath.TestSetName, "SpecFlow Launch");
+                var attributes = config.GetKeyValues("TestSet:Attributes", new List<KeyValuePair<string, string>>()).Select(a => new Attribute(a.Key, a.Value));
+                string description = config.GetValue(ConfigurationPath.TestSetDescription, string.Empty);
+                var startRequest = new StartTestRun(name, description, new HashSet<Attribute>(attributes));
 
                 var eventArg = new RunStartedEventArgs(_service, request);
                 OrangebeardAddIn.OnBeforeRunStarted(null, eventArg);
 
-                if (eventArg.LaunchReporter != null)
+                if (eventArg.TestRunUuid != null)
                 {
-                    _launchReporter = eventArg.LaunchReporter;
+                    _launchReporter = eventArg.TestRunUuid;
                 }
 
                 if (!eventArg.Canceled)
@@ -84,9 +88,9 @@ namespace Orangebeard.SpecFlowPlugin
             var project = Plugin.Config.GetValue<string>(ConfigurationPath.ServerProject); ;
             var uuid = Plugin.Config.GetValue<string>(ConfigurationPath.ServerAuthenticationUuid); ;
 
-            if (args.Service != null)
+            if (args.Client != null)
             {
-                _service = args.Service as OrangebeardClient;
+                _service = args.Client as OrangebeardV2Client;
             }
             else
             {
@@ -94,7 +98,7 @@ namespace Orangebeard.SpecFlowPlugin
                             "SpecFlow Plugin/" +
                             typeof(OrangebeardHooks).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion
                             );
-                _service = new OrangebeardClient(orangebeardConfig);
+                _service = new OrangebeardV2Client(orangebeardConfig, true);
             }
 
             return args.Config;
