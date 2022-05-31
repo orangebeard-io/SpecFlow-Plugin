@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using Orangebeard.Shared.Internal.Logging;
-using Orangebeard.Shared.Reporter;
 using Orangebeard.SpecFlowPlugin.EventArguments;
 using TechTalk.SpecFlow;
 
