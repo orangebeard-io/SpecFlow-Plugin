@@ -23,9 +23,7 @@ namespace Orangebeard.SpecFlowPlugin
     {
         private static readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<OrangebeardHooks>();
 
-        //private static IClientService _service;
         private static OrangebeardV2Client _client;
-        //private static ILaunchReporter _launchReporter;
         private static Guid? _testRunUuid;
 
         [BeforeTestRun(Order = -20000)]
@@ -146,7 +144,7 @@ namespace Orangebeard.SpecFlowPlugin
                     {
                         var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(featureContext);
 
-                        if (currentFeature == null || currentFeature.FinishTask != null)
+                        if (currentFeature == null /* || currentFeature.FinishTask != null */)
                         {
                             var startTestItem = new StartTestItem(
                                 testRunUUID: _testRunUuid.Value,
@@ -190,7 +188,7 @@ namespace Orangebeard.SpecFlowPlugin
                     var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(featureContext);
                     var remainingThreadCount = OrangebeardAddIn.DecrementFeatureThreadCount(featureContext);
 
-                    if (currentFeature != null && currentFeature.FinishTask == null && remainingThreadCount == 0)
+                    if (currentFeature != null /* && currentFeature.FinishTask == null */ && remainingThreadCount == 0)
                     {
                         var finishTestItem = new FinishTestItem(_testRunUuid.Value, Status.SKIPPED);
 

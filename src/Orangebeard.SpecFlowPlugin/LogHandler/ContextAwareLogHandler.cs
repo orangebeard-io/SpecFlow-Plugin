@@ -15,33 +15,36 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
     {
         private readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
 
+        //private OrangebeardV2Client _client; //TODO!+ Find out where to intialize this one! Maybe make it a public Property.
+        //private Guid _testRunUuid; //TODO!+ Find out where to initialize this one! Maybe make it a public Property.
+
         public void Initialize(ICommandsSource commandsSource)
         {
+            //TODO?~ It's unclear if the client and testRunUuid will ever be instantiated properly....
             commandsSource.OnBeginLogScopeCommand += CommandsSource_OnBeginLogScopeCommand;
             commandsSource.OnEndLogScopeCommand += CommandsSource_OnEndLogScopeCommand;
             commandsSource.OnLogMessageCommand += CommandsSource_OnLogMessageCommand;
         }
 
-        private void CommandsSource_OnLogMessageCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogMessageCommandArgs args, 
-            OrangebeardV2Client client, Guid testRunUuid)
+        private void CommandsSource_OnLogMessageCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogMessageCommandArgs args, OrangebeardV2Client client, Guid? testRunUuid)
         {
             var logScope = args.LogScope;
 
-            Guid? testReporter;
+            Guid? testItemUuid;
 
             if (logScope != null && OrangebeardAddIn.LogScopes.ContainsKey(logScope.Id))
             {
-                testReporter = OrangebeardAddIn.LogScopes[logScope.Id];
+                testItemUuid = OrangebeardAddIn.LogScopes[logScope.Id];
             }
             else
             {
                 // TODO: investigate SpecFlow how to understand current scenario context
-                testReporter = GetCurrentTestReporter();
+                testItemUuid = GetCurrentTestReporter();
             }
 
-            if (testReporter != null)
+            if (testItemUuid != null)
             {
-                client.Log(args.LogMessage.ConvertToRequest(testRunUuid, testReporter.Value));
+                client.Log(args.LogMessage.ConvertToRequest(testRunUuid.Value, testItemUuid.Value));
             }
             else
             {
@@ -49,46 +52,36 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
         }
 
-        private void CommandsSource_OnBeginLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args,
-            OrangebeardV2Client client, Guid testRunUuid)
+        private void CommandsSource_OnBeginLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args, OrangebeardV2Client client, Guid? testRunUuid)
         {
             var logScope = args.LogScope;
 
-            /*
-            var startRequest = new StartTestItemRequest
-            {
-                Name = logScope.Name,
-                StartTime = logScope.BeginTime,
-                HasStats = false
-            };
-            */
             //TODO?~ Original code set the start time to logScope.BeginTime
             var startTestItem = new StartTestItem(
-                testRunUUID: testRunUuid,
+                testRunUUID: testRunUuid.Value,
                 name: logScope.Name,
                 type: TestItemType.STEP,
                 description: null,
                 attributes: null
             );
 
-            Guid? testReporter = null;
+            Guid? testItemUuid = null;
 
             if (logScope.Parent != null)
             {
                 if (OrangebeardAddIn.LogScopes.ContainsKey(logScope.Parent.Id))
                 {
-                    testReporter = OrangebeardAddIn.LogScopes[logScope.Parent.Id];
+                    testItemUuid = OrangebeardAddIn.LogScopes[logScope.Parent.Id];
                 }
             }
             else
             {
-                testReporter = GetCurrentTestReporter();
+                testItemUuid = GetCurrentTestReporter();
             }
 
-            if (testReporter != null)
+            if (testItemUuid != null)
             {
-                //var nestedStep = testReporter.StartChildTestReporter(startTestItem);
-                var nestedStep = client.StartTestItem(testReporter, startTestItem);
+                var nestedStep = client.StartTestItem(testItemUuid, startTestItem);
                 OrangebeardAddIn.LogScopes[logScope.Id] = nestedStep.Value; //TODO?~ Check if nestedStep == null ?
             }
             else
@@ -97,24 +90,15 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
         }
 
-        private void CommandsSource_OnEndLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args,
-            OrangebeardV2Client client, Guid testRunUuid)
+        private void CommandsSource_OnEndLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args, OrangebeardV2Client client, Guid? testRunUuid)
         {
             var logScope = args.LogScope;
 
-            /*
-            var finishRequest = new FinishTestItemRequest
-            {
-                EndTime = logScope.EndTime.Value,
-                Status = _nestedStepStatusMap[logScope.Status]
-            };
-            */
             //TODO?~ In the original code, EndTime is set to logScope.EndTime.Value
-            var finishTestItem = new FinishTestItem(testRunUuid, _nestedStepStatusMap[logScope.Status]);
+            var finishTestItem = new FinishTestItem(testRunUuid.Value, _nestedStepStatusMap[logScope.Status]);
 
             if (OrangebeardAddIn.LogScopes.ContainsKey(logScope.Id))
             {
-                //OrangebeardAddIn.LogScopes[logScope.Id].Finish(finishRequest);
                 Guid testItem = OrangebeardAddIn.LogScopes[logScope.Id];
                 client.FinishTestItem(testItem, finishTestItem);
 

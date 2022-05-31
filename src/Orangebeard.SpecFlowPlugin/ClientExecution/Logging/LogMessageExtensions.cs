@@ -1,9 +1,5 @@
 ﻿using Orangebeard.Client.Entities;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 {
@@ -59,7 +55,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
                 };
             }
 
-            return logRequest;
+            return log;
         }
     }
 }
