@@ -6,7 +6,7 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class RunStartedEventArgs : EventArgs
     {
-        RunStartedEventArgs(OrangebeardV2Client client, StartTestRun startTestRun)
+        public RunStartedEventArgs(OrangebeardV2Client client, StartTestRun startTestRun)
         {
             Client = client;
             StartTestRun = startTestRun;

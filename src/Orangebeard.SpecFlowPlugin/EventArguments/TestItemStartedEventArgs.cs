@@ -13,13 +13,13 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
             StartTestItemRequest = startTestItem;
         }
 
-        public TestItemStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem, Guid testUuid)
+        public TestItemStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem, Guid? testUuid)
             : this(client, startTestItem)
         {
             TestUuid = testUuid;
         }
 
-        public TestItemStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem, Guid testUuid, FeatureContext featureContext, ScenarioContext scenarioContext)
+        public TestItemStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem, Guid? testUuid, FeatureContext featureContext, ScenarioContext scenarioContext)
             : this(client, startTestItem, testUuid)
         {
             this.FeatureContext = featureContext;
@@ -30,7 +30,7 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
 
         public StartTestItem StartTestItemRequest { get; }
 
-        public Guid TestUuid { get; }
+        public Guid? TestUuid { get; }
 
         public FeatureContext FeatureContext { get; }
 
