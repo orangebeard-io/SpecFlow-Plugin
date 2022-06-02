@@ -1,4 +1,6 @@
-﻿using Orangebeard.SpecFlowPlugin.Extensions;
+﻿using Orangebeard.Client;
+using Orangebeard.Client.Entities;
+using Orangebeard.SpecFlowPlugin.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,20 +16,38 @@ namespace Orangebeard.SpecFlowPlugin
         public void Handle(ScenarioContext scenarioContext)
         {
             var scenarioReporter = OrangebeardAddIn.GetScenarioTestReporter(scenarioContext);
+            Guid? testRunUuid = OrangebeardAddIn.TestrunUuid;
+            OrangebeardV2Client client = OrangebeardAddIn.Client;
 
+            /*
             var skippedStepReporter = scenarioReporter.StartChildTestReporter(new Client.Abstractions.Requests.StartTestItemRequest
             {
                 Name = scenarioContext.StepContext.StepInfo.GetCaption(),
                 StartTime = DateTime.UtcNow,
-                Type = Client.Abstractions.Models.TestItemType.Step,
+                //Type = Client.Abstractions.Models.TestItemType.Step,
+                Type = Client.Entities.TestItemType.STEP,
                 HasStats = false
             });
-            
+            */
+            StartTestItem startTestItem = new StartTestItem(
+                testRunUUID: testRunUuid.Value,
+                name: scenarioContext.StepContext.StepInfo.GetCaption(),
+                type: TestItemType.STEP,
+                description: null,
+                attributes: null);
+            var skippedStepUuid = client.StartTestItem(scenarioReporter, startTestItem);
+
+
+            /*
             skippedStepReporter.Finish(new Client.Abstractions.Requests.FinishTestItemRequest
             {
                 EndTime = DateTime.UtcNow,
-                Status = Client.Abstractions.Models.Status.Skipped
+                //Status = Client.Abstractions.Models.Status.Skipped
+                Status = Client.Entities.Status.SKIPPED
             });
+            */
+            FinishTestItem finishTestItem = new FinishTestItem(testRunUuid.Value, Status.SKIPPED);
+            client.FinishTestItem(skippedStepUuid.Value, finishTestItem);
         }
     }
 }

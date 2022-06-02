@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using Orangebeard.Client;
 using Orangebeard.Shared.Internal.Logging;
 using Orangebeard.SpecFlowPlugin.EventArguments;
 using TechTalk.SpecFlow;
@@ -9,6 +10,9 @@ namespace Orangebeard.SpecFlowPlugin
     public class OrangebeardAddIn
     {
         private static readonly ITraceLogger Logger = TraceLogManager.Instance.GetLogger<OrangebeardAddIn>();
+
+        public static OrangebeardV2Client Client { get; set; }
+        public static Guid? TestrunUuid { get; set; }
 
         private static ConcurrentDictionary<FeatureInfo, Guid> FeatureTestReporters { get; } = new ConcurrentDictionary<FeatureInfo, Guid>(new FeatureInfoEqualityComparer());
 

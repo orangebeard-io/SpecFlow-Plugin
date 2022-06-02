@@ -11,14 +11,14 @@ namespace Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands
 {
     public interface ICommandsSource
     {
-        event LogCommandHandler<LogScopeCommandArgs, OrangebeardV2Client, Guid?> OnBeginLogScopeCommand;
+        event LogCommandHandler<LogScopeCommandArgs> OnBeginLogScopeCommand;
 
-        event LogCommandHandler<LogScopeCommandArgs, OrangebeardV2Client, Guid?> OnEndLogScopeCommand;
+        event LogCommandHandler<LogScopeCommandArgs> OnEndLogScopeCommand;
 
-        event LogCommandHandler<LogMessageCommandArgs, OrangebeardV2Client, Guid?> OnLogMessageCommand;
+        event LogCommandHandler<LogMessageCommandArgs> OnLogMessageCommand;
 
         ITestCommandsSource TestCommandsSource { get; }
     }
 
-    public delegate void LogCommandHandler<TCommandArgs, TClient, TGuid>(ILogContext logContext, TCommandArgs args, TClient client, TGuid nullableGuid);
+    public delegate void LogCommandHandler<TCommandArgs>(ILogContext logContext, TCommandArgs args);
 }

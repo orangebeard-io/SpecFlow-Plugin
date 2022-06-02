@@ -60,6 +60,8 @@ namespace Orangebeard.SpecFlowPlugin
                     OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startRequest, _testRunUuid.Value));
 
                 }
+
+                OrangebeardAddIn.TestrunUuid = _testRunUuid;
             }
             catch (Exception exp)
             {
@@ -69,18 +71,9 @@ namespace Orangebeard.SpecFlowPlugin
 
         private static IConfiguration Initialize()
         {
-           // IConfigurationBuilder _configBuilder new ConfigurationBuilder().AddJsonFile(jsonPath).AddEnvironmentVariables();
-           // IConfiguration _configuration;
-           // OrangebeardConfiguration _config;
-           // OrangebeardClient _orangebeard;
-
             var args = new InitializingEventArgs(Plugin.Config);
 
             OrangebeardAddIn.OnInitializing(typeof(OrangebeardHooks), args);
-
-            var uri = Plugin.Config.GetValue<string>(ConfigurationPath.ServerUrl);
-            var project = Plugin.Config.GetValue<string>(ConfigurationPath.ServerProject); ;
-            var uuid = Plugin.Config.GetValue<string>(ConfigurationPath.ServerAuthenticationUuid); ;
 
             if (args.Client != null)
             {
@@ -94,6 +87,8 @@ namespace Orangebeard.SpecFlowPlugin
                             );
                 _client = new OrangebeardV2Client(orangebeardConfig, true);
             }
+
+            OrangebeardAddIn.Client = _client;
 
             return args.Config;
         }
@@ -227,75 +222,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                 if (currentFeature != null)
                 {
-                    /*
-                    var request = new StartTestItemRequest
-                    {
-                        Name = this.ScenarioContext.ScenarioInfo.Title,
-                        Description = this.ScenarioContext.ScenarioInfo.Description,
-                        StartTime = DateTime.UtcNow,
-                        Type = TestItemType.Step,
-                        Attributes = this.ScenarioContext.ScenarioInfo.Tags?.Select(tag => new ItemAttribute { Value = tag }).ToList()
-                    };
-                    */
-
-                    string description = this.ScenarioContext.ScenarioInfo.Description;
-
-                    //TODO?~ Extract this part to a separate method?
-                    // fetch scenario parameters (from Examples block)
-                    var arguments = this.ScenarioContext.ScenarioInfo.Arguments;
-                    if (arguments != null && arguments.Count > 0)
-                    {
-                        //request.Parameters = new List<KeyValuePair<string, string>>();
-                        var parameters = new List<KeyValuePair<string, string>>();
-
-                        foreach (DictionaryEntry argument in arguments)
-                        {
-                            parameters.Add(new KeyValuePair<string, string>
-                            (
-                                argument.Key.ToString(),
-                                argument.Value.ToString()
-                            ));
-                        }
-
-                        // append scenario outline parameters to description
-                        var parametersInfo = new StringBuilder();
-                        parametersInfo.Append("|");
-                        foreach (var p in parameters)
-                        {
-                            parametersInfo.Append(p.Key);
-
-                            parametersInfo.Append("|");
-                        }
-
-                        parametersInfo.AppendLine();
-                        parametersInfo.Append("|");
-                        foreach (var p in parameters)
-                        {
-                            parametersInfo.Append("---");
-                            parametersInfo.Append("|");
-                        }
-
-                        parametersInfo.AppendLine();
-                        parametersInfo.Append("|");
-                        foreach (var p in parameters)
-                        {
-                            parametersInfo.Append("**");
-                            parametersInfo.Append(p.Value);
-                            parametersInfo.Append("**");
-
-                            parametersInfo.Append("|");
-                        }
-
-                        if (string.IsNullOrEmpty(description))
-                        {
-                            description = parametersInfo.ToString();
-                        }
-                        else
-                        {
-                            description = parametersInfo.ToString() + Environment.NewLine + Environment.NewLine + description;
-                        }
-
-                    }
+                    string description = DetermineDescriptionOfStep();
 
                     var startTestStep = new StartTestItem(
                         testRunUUID: _testRunUuid.Value,
@@ -321,6 +248,69 @@ namespace Orangebeard.SpecFlowPlugin
             {
                 _traceLogger.Error(exp.ToString());
             }
+        }
+
+        private string DetermineDescriptionOfStep()
+        {
+            string description = this.ScenarioContext.ScenarioInfo.Description;
+
+            //TODO?~ Extract this part to a separate method?
+            // fetch scenario parameters (from Examples block)
+            var arguments = this.ScenarioContext.ScenarioInfo.Arguments;
+            if (arguments != null && arguments.Count > 0)
+            {
+                var parameters = new List<KeyValuePair<string, string>>();
+
+                foreach (DictionaryEntry argument in arguments)
+                {
+                    parameters.Add(new KeyValuePair<string, string>
+                    (
+                        argument.Key.ToString(),
+                        argument.Value.ToString()
+                    ));
+                }
+
+                // append scenario outline parameters to description
+                var parametersInfo = new StringBuilder();
+                parametersInfo.Append("|");
+                foreach (var p in parameters)
+                {
+                    parametersInfo.Append(p.Key);
+
+                    parametersInfo.Append("|");
+                }
+
+                parametersInfo.AppendLine();
+                parametersInfo.Append("|");
+                foreach (var p in parameters)
+                {
+                    parametersInfo.Append("---");
+                    parametersInfo.Append("|");
+                }
+
+                parametersInfo.AppendLine();
+                parametersInfo.Append("|");
+                foreach (var p in parameters)
+                {
+                    parametersInfo.Append("**");
+                    parametersInfo.Append(p.Value);
+                    parametersInfo.Append("**");
+
+                    parametersInfo.Append("|");
+                }
+
+                if (string.IsNullOrEmpty(description))
+                {
+                    description = parametersInfo.ToString();
+                }
+                else
+                {
+                    description = parametersInfo.ToString() + Environment.NewLine + Environment.NewLine + description;
+                }
+
+            }
+
+            return description;
         }
 
         [AfterScenario(Order = 20000)]
@@ -385,14 +375,6 @@ namespace Orangebeard.SpecFlowPlugin
 
                 var currentScenario = OrangebeardAddIn.GetScenarioTestReporter(this.ScenarioContext);
 
-                /*
-                var stepInfoRequest = new StartTestItemRequest
-                {
-                    Name = this.StepContext.StepInfo.GetCaption(),
-                    StartTime = DateTime.UtcNow,
-                    HasStats = false
-                };
-                */
                 var stepInfo = new StartTestItem(_testRunUuid.Value, this.StepContext.StepInfo.GetCaption(), TestItemType.STEP, description: null, attributes: null);
 
                 var eventArg = new StepStartedEventArgs(_client, stepInfo, currentScenario.Value, this.FeatureContext, this.ScenarioContext, this.StepContext);
