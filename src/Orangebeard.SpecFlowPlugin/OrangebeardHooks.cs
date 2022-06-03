@@ -154,7 +154,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                             if (!eventArg.Canceled)
                             {
-                                currentFeature = _client.StartTestItem(_testRunUuid.Value, startTestItem);
+                                currentFeature = _client.StartTestItem(/*_testRunUuid.Value*/null, startTestItem);
                                 OrangebeardAddIn.SetFeatureTestReporter(featureContext, currentFeature.Value); //TODO?+ Check that currentFeature != null ?
 
                                 OrangebeardAddIn.OnAfterFeatureStarted(null, new TestItemStartedEventArgs(_client, startTestItem, currentFeature, featureContext, null));

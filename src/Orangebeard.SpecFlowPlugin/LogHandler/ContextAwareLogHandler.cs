@@ -15,11 +15,6 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
     {
         private readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
 
-        //TODO!~ These values were originally implied by the ITestReporter / ILaunchReporter.
-        // Therefore, we should retrieve those values from where the ITestReporter / ILaunchReporter instances came from.
-        //private OrangebeardV2Client _client; //TODO!+ Find out where to intialize this one! Maybe make it a public Property.
-        //private Guid? _testRunUuid; //TODO!+ Find out where to initialize this one! Maybe make it a public Property.
-
         public void Initialize(ICommandsSource commandsSource)
         {
             commandsSource.OnBeginLogScopeCommand += CommandsSource_OnBeginLogScopeCommand;
