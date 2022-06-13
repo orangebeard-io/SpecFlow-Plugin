@@ -4,7 +4,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands.CommandArgs
 {
     public class LogMessageCommandArgs
     {
-        public LogMessageCommandArgs(ILogScope logScope, ILogMessage logMessage)
+        public LogMessageCommandArgs(ILogScope logScope, LogMessage logMessage)
         {
             LogScope = logScope;
             LogMessage = logMessage;
@@ -12,6 +12,6 @@ namespace Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands.CommandArgs
 
         public ILogScope LogScope { get; }
 
-        public ILogMessage LogMessage { get; }
+        public LogMessage LogMessage { get; }
     }
 }

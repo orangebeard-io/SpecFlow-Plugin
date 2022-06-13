@@ -1,31 +1,30 @@
-﻿using System;
+﻿using Orangebeard.Client.Entities;
+using System;
 
 namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 {
-    /// <summary>
-    /// Represents message for logging.
-    /// </summary>
-    public interface ILogMessage
+    public class LogMessage
     {
         /// <summary>
         /// Textual log event message.
         /// </summary>
-        string Message { get; set; }
+        public string Message { get; set; }
 
         /// <summary>
         /// Time representation when log event occurs.
         /// </summary>
-        DateTime Time { get; set; }
+        public DateTime Time { get; set; }
 
         /// <summary>
         /// Level of log event.
         /// </summary>
-        LogMessageLevel Level { get; set; }
+        public LogLevel Level { get; set; }
 
         /// <summary>
         /// Binary data attached to log event.
         /// Null if log event is without attachment.
         /// </summary>
-        ILogMessageAttachment Attachment { get; set; }
+        public LogMessageAttachment Attachment { get; set; }
+
     }
 }

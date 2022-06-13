@@ -58,7 +58,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         /// Sends log message to current test context.
         /// </summary>
         /// <param name="log">Full model object for message</param>
-        void Message(ILogMessage log);
+        void Message(LogMessage log);
 
         /// <summary>
         /// Sends log message with "Info" level to current test context.

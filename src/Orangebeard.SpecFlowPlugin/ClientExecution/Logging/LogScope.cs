@@ -7,7 +7,8 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
     public class LogScope : BaseLogScope
     {
         //TODO?+ Add IExtensionManager and CommandsSource?
-        public LogScope(ILogContext logContext /*, IExtensionManager extensionManager*/ /*, CommandsSource commandsSource*/, ILogScope root, ILogScope parent, string name) : base(logContext /*, extensionManager*/ /*, commandsSource */)
+        public LogScope(ILogContext logContext /*, IExtensionManager extensionManager*/ /*, CommandsSource commandsSource*/, ILogScope root, ILogScope parent, string name) 
+            : base(logContext /*, extensionManager*/ /*, commandsSource */)
         {
             if (string.IsNullOrEmpty(name))
             {

@@ -1,33 +1,10 @@
-﻿using Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands;
+﻿using Orangebeard.Client;
+using Orangebeard.Client.Entities;
+using Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands;
 using System;
 
 namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 {
-    //TODO!~ Either remove the use of this altogether, or replace the dummy with [a variant of] the original ILogMessage implementation.
-    class DummyLogMessage : ILogMessage
-    {
-        /// <summary>
-        /// Textual log event message.
-        /// </summary>
-        public string Message { get; set; }
-
-        /// <summary>
-        /// Time representation when log event occurs.
-        /// </summary>
-        public DateTime Time { get; set; }
-
-        /// <summary>
-        /// Level of log event.
-        /// </summary>
-        public LogMessageLevel Level { get; set; }
-
-        /// <summary>
-        /// Binary data attached to log event.
-        /// Null if log event is without attachment.
-        /// </summary>
-        public ILogMessageAttachment Attachment { get; set; }
-    }
-
     abstract public class BaseLogScope : ILogScope
     {
         //TODO?+ protected IExtensionManager _extensionManager;
@@ -62,25 +39,28 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public virtual ILogScope BeginScope(string name)
         {
+            /* ORIGINAL CODE:
+             *   var logScope = new LogScope(Context, _extensionManager, _commandsSource, Root, this, name);
+             *   Context.Log = logScope;
+             *   return logScope;
+             */
             //TODO?+ Include extensionManager and _commandsSource?
             var logScope = new LogScope(Context /*, _extensionManager */ /*, _commandsSource*/, Root, this, name);
-
-            //TODO?+ Context.Log = logScope;
-
+            Context.Log = logScope;
             return logScope;
         }
 
         public void Debug(string message)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Debug;
+            logMessage.Level = LogLevel.debug;
             Message(logMessage);
         }
 
         public void Debug(string message, string mimeType, byte[] content)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Debug;
+            logMessage.Level = LogLevel.debug;
             logMessage.Attachment = GetAttachFromContent(mimeType, content);
             Message(logMessage);
         }
@@ -88,14 +68,14 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         public void Error(string message)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Error;
+            logMessage.Level = LogLevel.error;
             Message(logMessage);
         }
 
         public void Error(string message, string mimeType, byte[] content)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Error;
+            logMessage.Level = LogLevel.error;
             logMessage.Attachment = GetAttachFromContent(mimeType, content);
             Message(logMessage);
         }
@@ -103,14 +83,14 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         public void Fatal(string message)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Fatal;
+            logMessage.Level = LogLevel.error; // WAS: LogMessageLevel.Fatal
             Message(logMessage);
         }
 
         public void Fatal(string message, string mimeType, byte[] content)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Fatal;
+            logMessage.Level = LogLevel.error; // WAS: LogMessageLevel.Fatal
             logMessage.Attachment = GetAttachFromContent(mimeType, content);
             Message(logMessage);
         }
@@ -118,14 +98,14 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         public void Info(string message)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Info;
+            logMessage.Level = LogLevel.info;
             Message(logMessage);
         }
 
         public void Info(string message, string mimeType, byte[] content)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Info;
+            logMessage.Level = LogLevel.info;
             logMessage.Attachment = GetAttachFromContent(mimeType, content);
             Message(logMessage);
         }
@@ -133,14 +113,14 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         public void Trace(string message)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Trace;
+            logMessage.Level = LogLevel.info; // WAS: LogMessageLevel.Trace
             Message(logMessage);
         }
 
         public void Trace(string message, string mimeType, byte[] content)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Trace;
+            logMessage.Level = LogLevel.info; // WAS: LogMessageLevel.Trace
             logMessage.Attachment = GetAttachFromContent(mimeType, content);
             Message(logMessage);
         }
@@ -148,37 +128,49 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         public void Warn(string message)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Warning;
+            logMessage.Level = LogLevel.warn;
             Message(logMessage);
         }
 
         public void Warn(string message, string mimeType, byte[] content)
         {
             var logMessage = GetDefaultLogRequest(message);
-            logMessage.Level = LogMessageLevel.Warning;
+            logMessage.Level = LogLevel.warn;
             logMessage.Attachment = GetAttachFromContent(mimeType, content);
             Message(logMessage);
         }
 
-        public virtual void Message(ILogMessage log)
+        public virtual void Message(LogMessage log)
         {
             //TODO?+ CommandsSource.RaiseOnLogMessageCommand(_commandsSource, Context, new Extensibility.Commands.CommandArgs.LogMessageCommandArgs(this, log));
+
+            var context = Context;
+            var currentScope = Context.Log;
+
+            OrangebeardV2Client client = OrangebeardAddIn.Client;
+            Guid? testRunUuid = OrangebeardAddIn.TestrunUuid;
+
+            Guid? testUuid = Orangebeard.SpecFlowPlugin.Context.Current.TestUuid;
+            if (testUuid != null) // And right now it ALWAYS is... :-(
+            {
+                Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message);
+                client.Log(logItem);
+            }
         }
 
-        protected ILogMessage GetDefaultLogRequest(string text)
+        protected LogMessage GetDefaultLogRequest(string text)
         {
             //TODO?~
-            var logMessage = new DummyLogMessage { Message = text, Attachment = null, Level = LogMessageLevel.Info /* ? */, Time = DateTime.Now };
+            var logMessage = new LogMessage { Message = text, Attachment = null, Level = LogLevel.info /* ? */, Time = DateTime.Now };
             /*
             var logMessage = new LogMessage(text);
              */
             return logMessage;
         }
 
-        protected ILogMessageAttachment GetAttachFromContent(string mimeType, byte[] content)
+        protected LogMessageAttachment GetAttachFromContent(string mimeType, byte[] content)
         {
-            //TODO?+ return new LogMessageAttachment(mimeType, content);
-            return null;
+            return new LogMessageAttachment(mimeType, content);
         }
 
         public virtual void Dispose()
