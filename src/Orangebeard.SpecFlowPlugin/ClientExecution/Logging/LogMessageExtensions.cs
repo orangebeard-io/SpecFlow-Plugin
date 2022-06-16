@@ -6,7 +6,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
     public static class LogMessageExtensions
     {
         /// <summary>
-        /// Given an ILogMessage, turn it into an Orangebeard "Log" instance.
+        /// Given a LogMessage, turn it into an Orangebeard "Log" instance.
         /// If the message contains an Attachment, create an Orangebeard "Attachment" instance as well.
         /// </summary>
         /// <param name="logMessage">The log message.</param>
@@ -18,7 +18,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             if (logMessage == null) throw new ArgumentNullException("Cannot convert nullable log message object.", nameof(logMessage));
 
             //TODO?+ Original code set the timestamp to logMessage.Time .
-            var log = new Log(testRunUuid, testItemUuid, logMessage.Level, logMessage.Message);
+            var log = new Log(testRunUuid, testItemUuid, logMessage.Level, logMessage.Message, LogFormat.PLAIN_TEXT);
 
             Attachment attachment = null;
             string fileName = ""; //TODO!~ Find the proper name for the attachment file!!

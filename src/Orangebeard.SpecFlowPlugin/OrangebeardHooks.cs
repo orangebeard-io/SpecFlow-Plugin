@@ -56,6 +56,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                     //_launchReporter.Start(startRequest);
                     _testRunUuid = _client.StartTestRun(startRequest);
+                    Context.Current = new NewTestContext(null, _testRunUuid.Value); //TODO?~ Check that _testRunUuid != null?
 
                     OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startRequest, _testRunUuid.Value));
 
@@ -154,8 +155,11 @@ namespace Orangebeard.SpecFlowPlugin
 
                             if (!eventArg.Canceled)
                             {
-                                currentFeature = _client.StartTestItem(/*_testRunUuid.Value*/null, startTestItem);
-                                OrangebeardAddIn.SetFeatureTestReporter(featureContext, currentFeature.Value); //TODO?+ Check that currentFeature != null ?
+                                currentFeature = _client.StartTestItem(null, startTestItem);
+                                //TODO?+ Check that currentFeature != null ?
+                                Context.Current = new NewTestContext(Context.Current, currentFeature.Value);
+
+                                OrangebeardAddIn.SetFeatureTestReporter(featureContext, currentFeature.Value);
 
                                 OrangebeardAddIn.OnAfterFeatureStarted(null, new TestItemStartedEventArgs(_client, startTestItem, currentFeature, featureContext, null));
                             }
@@ -238,7 +242,10 @@ namespace Orangebeard.SpecFlowPlugin
                     if (!eventArg.Canceled)
                     {
                         var currentScenario = _client.StartTestItem(currentFeature, startTestStep);
-                        OrangebeardAddIn.SetScenarioTestReporter(this.ScenarioContext, currentScenario.Value); //TODO?~ Null check on `currentScenario` ?
+                        //TODO?~ Null check on `currentScenario` ?
+                        Context.Current = new NewTestContext(Context.Current, currentScenario.Value);
+
+                        OrangebeardAddIn.SetScenarioTestReporter(this.ScenarioContext, currentScenario.Value);
 
                         OrangebeardAddIn.OnAfterScenarioStarted(this, new TestItemStartedEventArgs(_client, startTestStep, currentFeature, this.FeatureContext, this.ScenarioContext));
                     }
@@ -324,18 +331,18 @@ namespace Orangebeard.SpecFlowPlugin
                 {
                     if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.TestError)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.ToString());
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.ToString(), LogFormat.PLAIN_TEXT);
                         _client.Log(log);
 
                     }
                     else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.BindingError)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.Message);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.Message, LogFormat.PLAIN_TEXT);
                         _client.Log(log);
                     }
                     else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, new MissingStepDefinitionException().Message);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, new MissingStepDefinitionException().Message, LogFormat.PLAIN_TEXT);
                         _client.Log(log);
                     }
 
@@ -383,13 +390,16 @@ namespace Orangebeard.SpecFlowPlugin
                 if (!eventArg.Canceled)
                 {
                     var stepUuid = _client.StartTestItem(currentScenario.Value, stepInfo);
-                    OrangebeardAddIn.SetStepTestReporter(this.StepContext, stepUuid.Value); //TODO?+ Null check on stepUuid ?
+                    //TODO?+ Null check on stepUuid ?
+                    Context.Current = new NewTestContext(Context.Current, stepUuid.Value);
+
+                    OrangebeardAddIn.SetStepTestReporter(this.StepContext, stepUuid.Value);
 
                     // step parameters
                     var formattedParameters = this.StepContext.StepInfo.GetFormattedParameters();
                     if (!string.IsNullOrEmpty(formattedParameters))
                     {
-                        var log = new Log(_testRunUuid.Value, stepUuid.Value, LogLevel.info, formattedParameters);
+                        var log = new Log(_testRunUuid.Value, stepUuid.Value, LogLevel.info, formattedParameters, LogFormat.PLAIN_TEXT);
                         _client.Log(log);
                     }
 

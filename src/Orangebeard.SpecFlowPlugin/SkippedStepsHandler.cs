@@ -36,6 +36,7 @@ namespace Orangebeard.SpecFlowPlugin
                 description: null,
                 attributes: null);
             var skippedStepUuid = client.StartTestItem(scenarioReporter, startTestItem);
+            // No need to update the Context, since the step is going to be finished immediately with the status "SKIPPED".
 
 
             /*

@@ -2,6 +2,8 @@
 using Orangebeard.Client.Entities;
 using Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands;
 using System;
+using System.Collections.Generic;
+using Attribute = Orangebeard.Client.Entities.Attribute;
 
 namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 {
@@ -27,6 +29,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public virtual ILogScope Root { get; protected set; }
 
+        //TODO!+ Make sure that this thing is initialized....
         public virtual ILogContext Context { get; }
 
         public virtual string Name { get; }
@@ -39,12 +42,24 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public virtual ILogScope BeginScope(string name)
         {
+            var testUuid = SpecFlowPlugin.Context.Current.TestUuid;
+            Guid testRunUuid = OrangebeardAddIn.TestrunUuid.Value; //TODO?+ Check if OrangebeardAddIn.TestrunUuid != null
+            //TODO?+ Include extensionManager and _commandsSource?
+            StartTestItem startTestItem = new StartTestItem(
+                testRunUUID: testRunUuid,
+                name: name,
+                type: TestItemType.STEP, //TODO!+ Check if it shouldn't be SUITE or TEST....
+                description: name, //TODO?-  or just empty string or null?
+                attributes: new HashSet<Attribute>()
+                );
+            OrangebeardV2Client client = OrangebeardAddIn.Client;
+            client.StartTestItem(testUuid, startTestItem);
+
             /* ORIGINAL CODE:
              *   var logScope = new LogScope(Context, _extensionManager, _commandsSource, Root, this, name);
              *   Context.Log = logScope;
              *   return logScope;
              */
-            //TODO?+ Include extensionManager and _commandsSource?
             var logScope = new LogScope(Context /*, _extensionManager */ /*, _commandsSource*/, Root, this, name);
             Context.Log = logScope;
             return logScope;
@@ -140,20 +155,21 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             Message(logMessage);
         }
 
+        //TODO?~ The only reason this thing isn't a static method, is that BaseLogScope needs to implement ILogScope.
         public virtual void Message(LogMessage log)
         {
             //TODO?+ CommandsSource.RaiseOnLogMessageCommand(_commandsSource, Context, new Extensibility.Commands.CommandArgs.LogMessageCommandArgs(this, log));
 
-            var context = Context;
-            var currentScope = Context.Log;
+            //var context = Context;
+            //var currentScope = Context.Log;
 
             OrangebeardV2Client client = OrangebeardAddIn.Client;
             Guid? testRunUuid = OrangebeardAddIn.TestrunUuid;
 
-            Guid? testUuid = Orangebeard.SpecFlowPlugin.Context.Current.TestUuid;
-            if (testUuid != null) // And right now it ALWAYS is... :-(
+            Guid? testUuid = SpecFlowPlugin.Context.Current.TestUuid;
+            if (testUuid != null)
             {
-                Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message);
+                Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.PLAIN_TEXT);
                 client.Log(logItem);
             }
         }

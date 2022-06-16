@@ -1,4 +1,5 @@
 ﻿using Orangebeard.SpecFlowPlugin.ClientExecution;
+using Orangebeard.SpecFlowPlugin.ClientExecution.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,9 +10,31 @@ namespace Orangebeard.SpecFlowPlugin
 {
     public class NewTestContext
     {
+        public NewTestContext(NewTestContext parent, Guid? testUuid)
+        {
+            Parent = parent;
+            TestUuid = testUuid;
+            if (parent == null)
+            {
+                //TODO?~ Also find the values for the other parameters (logContext, root, and parent)? Or remove them?
+                //TODO?+ Since we apparently need a logContext... SHOULD we allow its "Log" to be null? Probably not!)
+                ILogContext launchContext = new LaunchContext { Log = null };
+                Log = new LogScope(logContext: launchContext, root: null, parent: null, name: "Dummy scope name."); //TODO!~ Better scope name! Note that it is not allowed to be null or empty. Maybe remove scope names altogether.
+                launchContext.Log = Log; //TODO?~ Is this circularity OK or will it give us an endless loop?
+                
+            }
+            else
+            {
+                //TODO?~ Also find the values for the other parameters? Or remove them?
+                Log = new LogScope(parent.Log.Context, root: null, parent: null, name: "Dummy scope name."); //TODO!~ Better scope name! Note that it is not allowed to be null or empty. Maybe remove scope names altogether.
+            }
+        }
+
         public NewTestContext Parent { get; private set; }
         public Guid? TestUuid { get; private set; }
 
+        //TODO!~ Make sure this thing isn't null....
+        public ILogScope Log { get; private set; }
         //TODO?+ Log function?
     }
 
@@ -27,7 +50,8 @@ namespace Orangebeard.SpecFlowPlugin
 
         //private static readonly Lazy<ILaunchContext> _launch = new Lazy<ILaunchContext>(() => new LaunchContext(Extensibility.ExtensionManager.Instance, _commandsSource.Value));
 
-        public static NewTestContext Current { get; private set; }
+        public static NewTestContext Current { get; set; } = new NewTestContext(null, null);
+
         /*
         /// <summary>
         /// Returns context to amend current test metadata or add log messages.

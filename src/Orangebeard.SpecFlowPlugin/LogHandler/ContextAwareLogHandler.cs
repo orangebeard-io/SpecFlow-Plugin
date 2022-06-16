@@ -87,7 +87,9 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
                     attributes: null
                 );
                 var nestedStep = client.StartTestItem(testItemUuid, startTestItem);
-                OrangebeardAddIn.LogScopes[logScope.Id] = nestedStep.Value; //TODO?~ Check if nestedStep == null ?
+                //TODO?+ Check if nestedStep == null?
+                Context.Current = new NewTestContext(Context.Current, nestedStep.Value);
+                OrangebeardAddIn.LogScopes[logScope.Id] = nestedStep.Value;
             }
             else
             {
