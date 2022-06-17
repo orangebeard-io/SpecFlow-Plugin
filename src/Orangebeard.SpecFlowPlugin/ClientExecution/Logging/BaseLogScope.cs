@@ -42,18 +42,25 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public virtual ILogScope BeginScope(string name)
         {
+            // NOTE: In the current implementation, the TestRunUuid and TestUuid are NULL when BeginScope is first called!
+            // Need to fix this. Also, maybe keep TestUuid in OrangebeardAddIn ?
+            // Note that we can use `OrangebeardAddIn.GetScenarioTestReporter` and its brothers to get a Suite/Test/Step UUID given a SpecFlow Context.
+
             var testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             Guid testRunUuid = OrangebeardAddIn.TestrunUuid.Value; //TODO?+ Check if OrangebeardAddIn.TestrunUuid != null
             //TODO?+ Include extensionManager and _commandsSource?
+            //TODO?- Isn't this already handled in the "CommandsSource_OnBeginLogScopeCommand" hook? Is that thing actually called? SHOULD it be called?
             StartTestItem startTestItem = new StartTestItem(
                 testRunUUID: testRunUuid,
                 name: name,
-                type: TestItemType.STEP, //TODO!+ Check if it shouldn't be SUITE or TEST....
+                type: TestItemType.STEP, //TODO!+ Check if it should be SUITE, TEST, or STEP. Seems it should always be TestItemType.STEP .
                 description: name, //TODO?-  or just empty string or null?
                 attributes: new HashSet<Attribute>()
                 );
             OrangebeardV2Client client = OrangebeardAddIn.Client;
-            client.StartTestItem(testUuid, startTestItem);
+            var childTestUuid = client.StartTestItem(testUuid, startTestItem);
+            NewTestContext newTestContext = new NewTestContext(SpecFlowPlugin.Context.Current, childTestUuid);
+            SpecFlowPlugin.Context.Current = newTestContext;
 
             /* ORIGINAL CODE:
              *   var logScope = new LogScope(Context, _extensionManager, _commandsSource, Root, this, name);
@@ -169,18 +176,14 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             Guid? testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             if (testUuid != null)
             {
-                Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.PLAIN_TEXT);
+                Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.MARKDOWN);
                 client.Log(logItem);
             }
         }
 
         protected LogMessage GetDefaultLogRequest(string text)
         {
-            //TODO?~
             var logMessage = new LogMessage { Message = text, Attachment = null, Level = LogLevel.info /* ? */, Time = DateTime.Now };
-            /*
-            var logMessage = new LogMessage(text);
-             */
             return logMessage;
         }
 

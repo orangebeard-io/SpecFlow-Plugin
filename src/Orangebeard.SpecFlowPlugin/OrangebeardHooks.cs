@@ -41,7 +41,7 @@ namespace Orangebeard.SpecFlowPlugin
                 var eventArg = new RunStartedEventArgs(_client, startRequest);
                 OrangebeardAddIn.OnBeforeRunStarted(null, eventArg);
 
-                if (eventArg.TestRunUuid != null)
+                if (eventArg.TestRunUuid != null) //TODO?~ It's actually eventArg.TestRunUuid = {00000000-0000-0000-0000-000000000000} ....
                 {
                     _testRunUuid = eventArg.TestRunUuid;
                 }
@@ -55,14 +55,15 @@ namespace Orangebeard.SpecFlowPlugin
                     }
 
                     //_launchReporter.Start(startRequest);
-                    _testRunUuid = _client.StartTestRun(startRequest);
+                    _testRunUuid = _client.StartTestRun(startRequest); //TODO?+ Some error handling if _testRunUuid == null , i.e. if the run fails to start?
+                    OrangebeardAddIn.TestrunUuid = _testRunUuid;
                     Context.Current = new NewTestContext(null, _testRunUuid.Value); //TODO?~ Check that _testRunUuid != null?
 
                     OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startRequest, _testRunUuid.Value));
 
                 }
 
-                OrangebeardAddIn.TestrunUuid = _testRunUuid;
+                OrangebeardAddIn.TestrunUuid = _testRunUuid; //TODO!- Already handled by OnAfterRunStarted...
             }
             catch (Exception exp)
             {
@@ -228,10 +229,11 @@ namespace Orangebeard.SpecFlowPlugin
                 {
                     string description = DetermineDescriptionOfStep();
 
+                    //TODO?~ In the original code, "BeforeScenario" starts a Step. But in our system, it is called for "Add two numbers",  which is a TestItemType.TEST .
                     var startTestStep = new StartTestItem(
                         testRunUUID: _testRunUuid.Value,
                         name: this.ScenarioContext.ScenarioInfo.Title,
-                        type: TestItemType.STEP,
+                        type: TestItemType.TEST, // WAS: TestItemType.STEP 
                         description: description,
                         attributes: new HashSet<Attribute>(this.ScenarioContext.ScenarioInfo.Tags?.Select(tag => new Attribute(value: tag)))
                     );
@@ -331,18 +333,18 @@ namespace Orangebeard.SpecFlowPlugin
                 {
                     if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.TestError)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.ToString(), LogFormat.PLAIN_TEXT);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.ToString(), LogFormat.MARKDOWN);
                         _client.Log(log);
 
                     }
                     else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.BindingError)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.Message, LogFormat.PLAIN_TEXT);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.Message, LogFormat.MARKDOWN);
                         _client.Log(log);
                     }
                     else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, new MissingStepDefinitionException().Message, LogFormat.PLAIN_TEXT);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, new MissingStepDefinitionException().Message, LogFormat.MARKDOWN);
                         _client.Log(log);
                     }
 
@@ -399,7 +401,7 @@ namespace Orangebeard.SpecFlowPlugin
                     var formattedParameters = this.StepContext.StepInfo.GetFormattedParameters();
                     if (!string.IsNullOrEmpty(formattedParameters))
                     {
-                        var log = new Log(_testRunUuid.Value, stepUuid.Value, LogLevel.info, formattedParameters, LogFormat.PLAIN_TEXT);
+                        var log = new Log(_testRunUuid.Value, stepUuid.Value, LogLevel.info, formattedParameters, LogFormat.MARKDOWN);
                         _client.Log(log);
                     }
 

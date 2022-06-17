@@ -18,7 +18,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             if (logMessage == null) throw new ArgumentNullException("Cannot convert nullable log message object.", nameof(logMessage));
 
             //TODO?+ Original code set the timestamp to logMessage.Time .
-            var log = new Log(testRunUuid, testItemUuid, logMessage.Level, logMessage.Message, LogFormat.PLAIN_TEXT);
+            var log = new Log(testRunUuid, testItemUuid, logMessage.Level, logMessage.Message, LogFormat.MARKDOWN);
 
             Attachment attachment = null;
             string fileName = ""; //TODO!~ Find the proper name for the attachment file!!
