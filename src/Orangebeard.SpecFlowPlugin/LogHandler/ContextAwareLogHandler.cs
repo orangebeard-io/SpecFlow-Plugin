@@ -11,6 +11,7 @@ using TechTalk.SpecFlow;
 
 namespace Orangebeard.SpecFlowPlugin.LogHandler
 {
+    //TODO?- Are the On...Command handlers even called?
     public class ContextAwareLogHandler : ICommandsListener
     {
         private readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
@@ -55,7 +56,9 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
         }
 
-        private void CommandsSource_OnBeginLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args)
+        //TODO?~ Was a "private" instance method and supposed to be called on a hook. Except that didn't happen.
+        // Made static for the moment, see if we fix the hook or not.
+        public static void CommandsSource_OnBeginLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args)
         {
             var logScope = args.LogScope;
 
@@ -90,14 +93,17 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
                 //TODO?+ Check if nestedStep == null?
                 Context.Current = new NewTestContext(Context.Current, nestedStep.Value);
                 OrangebeardAddIn.LogScopes[logScope.Id] = nestedStep.Value;
+
             }
             else
             {
-                _traceLogger.Warn("Unknown current step context to begin new log scope.");
+                //TODO?+ _traceLogger.Warn("Unknown current step context to begin new log scope.");
             }
         }
 
-        private void CommandsSource_OnEndLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args)
+        //TODO?~ Was a "private" instance method, and supposed to be called on a hook. Except that didn't happen.
+        // Made static for the moment, see if we fix the hook or not.
+        public static void CommandsSource_OnEndLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args)
         {
             var logScope = args.LogScope;
 
@@ -114,7 +120,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
             else
             {
-                _traceLogger.Warn($"Unknown current step context to end log scope with `{logScope.Id}` ID.");
+                //TODO?+ _traceLogger.Warn($"Unknown current step context to end log scope with `{logScope.Id}` ID.");
             }
         }
 
@@ -160,7 +166,8 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
         }
 
-        public Guid? GetCurrentTestReporter()
+        //TODO?~ Was an instance method.
+        public static Guid? GetCurrentTestReporter()
         {
             var testReporter = OrangebeardAddIn.GetStepTestReporter(ActiveStepContext);
 
@@ -177,7 +184,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             return testReporter;
         }
 
-        private Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
+        private static Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
             { LogScopeStatus.InProgress, Status.IN_PROGRESS },
             { LogScopeStatus.Passed, Status.PASSED },
             { LogScopeStatus.Failed, Status.FAILED },

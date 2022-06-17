@@ -49,7 +49,8 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             var testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             Guid testRunUuid = OrangebeardAddIn.TestrunUuid.Value; //TODO?+ Check if OrangebeardAddIn.TestrunUuid != null
             //TODO?+ Include extensionManager and _commandsSource?
-            //TODO?- Isn't this already handled in the "CommandsSource_OnBeginLogScopeCommand" hook? Is that thing actually called? SHOULD it be called?
+            //TODO?~ Note that this was first handled in CommandsSource_OnBeginLogScopeCommand . That thing isn't called anymore. But it did some bookkeeping that we should do too....
+            
             StartTestItem startTestItem = new StartTestItem(
                 testRunUUID: testRunUuid,
                 name: name,
@@ -62,12 +63,15 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             NewTestContext newTestContext = new NewTestContext(SpecFlowPlugin.Context.Current, childTestUuid);
             SpecFlowPlugin.Context.Current = newTestContext;
 
+
             /* ORIGINAL CODE:
              *   var logScope = new LogScope(Context, _extensionManager, _commandsSource, Root, this, name);
              *   Context.Log = logScope;
              *   return logScope;
              */
             var logScope = new LogScope(Context /*, _extensionManager */ /*, _commandsSource*/, Root, this, name);
+                //TODO!+ The bookkeeping from CommandsSource_OnBeginLogScopeCommand.
+                OrangebeardAddIn.LogScopes[logScope.Id] = childTestUuid.Value;
             Context.Log = logScope;
             return logScope;
         }

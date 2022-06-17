@@ -1,5 +1,6 @@
 ﻿//using Orangebeard.Shared.Extensibility;
 //using Orangebeard.Shared.Extensibility.Commands.CommandArgs;
+using Orangebeard.SpecFlowPlugin.LogHandler;
 using System;
 
 namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
@@ -31,6 +32,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             base.Dispose();
 
             //TODO?+ CommandsSource.RaiseOnEndScopeCommand(_commandsSource, Context, new LogScopeCommandArgs(this));
+            ContextAwareLogHandler.CommandsSource_OnEndLogScopeCommand(Context, new ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs(this));
 
             Context.Log = Parent;
         }

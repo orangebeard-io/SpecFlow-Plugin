@@ -227,10 +227,10 @@ namespace Orangebeard.SpecFlowPlugin
 
                 if (currentFeature != null)
                 {
-                    string description = DetermineDescriptionOfStep();
+                    string description = DetermineDescription();
 
                     //TODO?~ In the original code, "BeforeScenario" starts a Step. But in our system, it is called for "Add two numbers",  which is a TestItemType.TEST .
-                    var startTestStep = new StartTestItem(
+                    var startTestItem = new StartTestItem(
                         testRunUUID: _testRunUuid.Value,
                         name: this.ScenarioContext.ScenarioInfo.Title,
                         type: TestItemType.TEST, // WAS: TestItemType.STEP 
@@ -238,18 +238,18 @@ namespace Orangebeard.SpecFlowPlugin
                         attributes: new HashSet<Attribute>(this.ScenarioContext.ScenarioInfo.Tags?.Select(tag => new Attribute(value: tag)))
                     );
 
-                    var eventArg = new TestItemStartedEventArgs(_client, startTestStep, currentFeature, this.FeatureContext, this.ScenarioContext);
+                    var eventArg = new TestItemStartedEventArgs(_client, startTestItem, currentFeature, this.FeatureContext, this.ScenarioContext);
                     OrangebeardAddIn.OnBeforeScenarioStarted(this, eventArg);
 
                     if (!eventArg.Canceled)
                     {
-                        var currentScenario = _client.StartTestItem(currentFeature, startTestStep);
+                        var currentScenario = _client.StartTestItem(currentFeature, startTestItem);
                         //TODO?~ Null check on `currentScenario` ?
                         Context.Current = new NewTestContext(Context.Current, currentScenario.Value);
 
                         OrangebeardAddIn.SetScenarioTestReporter(this.ScenarioContext, currentScenario.Value);
 
-                        OrangebeardAddIn.OnAfterScenarioStarted(this, new TestItemStartedEventArgs(_client, startTestStep, currentFeature, this.FeatureContext, this.ScenarioContext));
+                        OrangebeardAddIn.OnAfterScenarioStarted(this, new TestItemStartedEventArgs(_client, startTestItem, currentFeature, this.FeatureContext, this.ScenarioContext));
                     }
                 }
             }
@@ -259,7 +259,7 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        private string DetermineDescriptionOfStep()
+        private string DetermineDescription()
         {
             string description = this.ScenarioContext.ScenarioInfo.Description;
 
