@@ -11,7 +11,7 @@ using TechTalk.SpecFlow;
 
 namespace Orangebeard.SpecFlowPlugin.LogHandler
 {
-    //TODO?- Are the On...Command handlers even called?
+    //TODO?- The  On...Command handlers aren't initialized, or called. Their code has been copied elsewhere.
     public class ContextAwareLogHandler : ICommandsListener
     {
         private readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
@@ -23,6 +23,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             commandsSource.OnLogMessageCommand += CommandsSource_OnLogMessageCommand;
         }
 
+        //TODO?- This one doesn't get called. Relevant code is in BaseLogScope.
         private void CommandsSource_OnLogMessageCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogMessageCommandArgs args)
         {
             var logScope = args.LogScope;
@@ -112,7 +113,8 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
                 var testRunUuid = OrangebeardAddIn.TestrunUuid;
                 var client = OrangebeardAddIn.Client;
                 //TODO?~ In the original code, EndTime is set to logScope.EndTime.Value
-                var finishTestItem = new FinishTestItem(testRunUuid.Value, _nestedStepStatusMap[logScope.Status]);
+                var status = _nestedStepStatusMap[logScope.Status];
+                var finishTestItem = new FinishTestItem(testRunUuid.Value, status);
                 Guid testItem = OrangebeardAddIn.LogScopes[logScope.Id];
                 client.FinishTestItem(testItem, finishTestItem);
 
@@ -184,7 +186,8 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             return testReporter;
         }
 
-        private static Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
+        //TODO?~ Was a private instance method. Should be a general translate function... not something every class can modify, but still something everyone could use for lookup.
+        public static Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
             { LogScopeStatus.InProgress, Status.IN_PROGRESS },
             { LogScopeStatus.Passed, Status.PASSED },
             { LogScopeStatus.Failed, Status.FAILED },

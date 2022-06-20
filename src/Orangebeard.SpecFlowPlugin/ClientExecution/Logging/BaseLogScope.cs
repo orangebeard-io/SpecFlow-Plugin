@@ -1,5 +1,7 @@
 ﻿using Orangebeard.Client;
 using Orangebeard.Client.Entities;
+using Orangebeard.Shared.Extensibility.LogFormatter;
+using Orangebeard.SpecFlowPlugin.ClientExtensibility;
 using Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands;
 using System;
 using System.Collections.Generic;
@@ -180,14 +182,38 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             Guid? testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             if (testUuid != null)
             {
+                //Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.MARKDOWN);
+                //client.Log(logItem);
+
+                /*
+                var (logItem, attachment) = log.ConvertToLogAndAttachment(testRunUuid.Value, testUuid.Value);
+                client.Log(logItem);
+                if (attachment != null)
+                {
+                    client.SendAttachment(attachment);
+                }
+                */
+
+                //TODO?~ For some reason, this sends the attachment as a SEPARATE log entry...??
                 Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.MARKDOWN);
                 client.Log(logItem);
+                if (log.Attachment != null)
+                {
+                    string fileName = "file0.jpg"; //TODO!~ Use the REAL filename!!
+                    Attachment attachment = new Attachment(testRunUuid.Value, testUuid.Value, log.Level, fileName, new Attachment.AttachmentFile(fileName, log.Attachment.MimeType, log.Attachment.Data));
+                    client.SendAttachment(attachment);
+                }
             }
         }
 
         protected LogMessage GetDefaultLogRequest(string text)
         {
-            var logMessage = new LogMessage { Message = text, Attachment = null, Level = LogLevel.info /* ? */, Time = DateTime.Now };
+            ILogFormatter logFormatter = new FileLogFormatter(); //TODO!~ Make this a static member, not something that is initialized every time this method is called.
+            logFormatter.FormatLog(text, out string newLogMessage, out LogMessageAttachment attachment);
+
+            //var logMessage = new LogMessage { Message = text, Attachment = null, Level = LogLevel.info /* ? */, Time = DateTime.Now };
+            var logMessage = new LogMessage { Message = newLogMessage, Attachment = attachment, Level = LogLevel.info /* ? */, Time = DateTime.Now };
+
             return logMessage;
         }
 
