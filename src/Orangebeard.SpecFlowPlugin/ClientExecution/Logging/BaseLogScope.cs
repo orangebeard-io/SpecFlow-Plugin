@@ -42,6 +42,8 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public virtual LogScopeStatus Status { get; set; } = LogScopeStatus.InProgress;
 
+        public static ILogFormatter fileFormatter = new FileLogFormatter();
+
         public virtual ILogScope BeginScope(string name)
         {
             // NOTE: In the current implementation, the TestRunUuid and TestUuid are NULL when BeginScope is first called!
@@ -190,8 +192,8 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         protected LogMessage GetDefaultLogRequest(string text)
         {
-            ILogFormatter logFormatter = new FileLogFormatter(); //TODO!~ Make this a static member, not something that is initialized every time this method is called.
-            logFormatter.FormatLog(text, out string newLogMessage, out LogMessageAttachment attachment);
+            //ILogFormatter logFormatter = new FileLogFormatter(); //TODO!~ Make this a static member, not something that is initialized every time this method is called.
+            fileFormatter.FormatLog(text, out string newLogMessage, out LogMessageAttachment attachment);
 
             var logMessage = new LogMessage { Message = newLogMessage, Attachment = attachment, Level = LogLevel.info /* ? */, Time = DateTime.Now };
 

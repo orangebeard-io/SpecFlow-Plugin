@@ -49,17 +49,22 @@ namespace Orangebeard.SpecFlowPlugin
                 if (!eventArg.Canceled)
                 {
                     //_launchReporter = _launchReporter ?? new LaunchReporter(_service, config, null, Orangebeard.Shared.Extensibility.ExtensionManager.Instance);
-                    if (_testRunUuid == null)
+                    if (_testRunUuid == null || _testRunUuid == Guid.Empty)
                     {
-                        //TODO?+                        
+                        _testRunUuid = _client.StartTestRun(startRequest); //TODO?+ Some error handling if _testRunUuid == null , i.e. if the run fails to start?
                     }
 
-                    //_launchReporter.Start(startRequest);
-                    _testRunUuid = _client.StartTestRun(startRequest); //TODO?+ Some error handling if _testRunUuid == null , i.e. if the run fails to start?
                     OrangebeardAddIn.TestrunUuid = _testRunUuid;
-                    Context.Current = new NewTestContext(null, _testRunUuid.Value); //TODO?~ Check that _testRunUuid != null?
+                    if (_testRunUuid == null)
+                    {
+                        //TODO!+ Error handling or warning.
+                    }
+                    else
+                    {
+                        Context.Current = new NewTestContext(null, _testRunUuid.Value);
 
-                    OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startRequest, _testRunUuid.Value));
+                        OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startRequest, _testRunUuid.Value));
+                    }
 
                 }
 
