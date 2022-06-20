@@ -89,7 +89,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         {
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.debug;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content);
+            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -104,7 +104,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         {
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.error;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content);
+            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -119,7 +119,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         {
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.error; // WAS: LogMessageLevel.Fatal
-            logMessage.Attachment = GetAttachFromContent(mimeType, content);
+            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -134,7 +134,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         {
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.info;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content);
+            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -149,7 +149,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         {
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.info; // WAS: LogMessageLevel.Trace
-            logMessage.Attachment = GetAttachFromContent(mimeType, content);
+            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -164,42 +164,24 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
         {
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.warn;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content);
+            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
         //TODO?~ The only reason this thing isn't a static method, is that BaseLogScope needs to implement ILogScope.
         public virtual void Message(LogMessage log)
         {
-            //TODO?+ CommandsSource.RaiseOnLogMessageCommand(_commandsSource, Context, new Extensibility.Commands.CommandArgs.LogMessageCommandArgs(this, log));
-
-            //var context = Context;
-            //var currentScope = Context.Log;
-
             OrangebeardV2Client client = OrangebeardAddIn.Client;
-            Guid? testRunUuid = OrangebeardAddIn.TestrunUuid;
-
+            Guid? testRunUuid = OrangebeardAddIn.TestrunUuid; //TODO?~ Test if it isn't null... or make it not a nullable thing in the first place, in OrangebeardAddIn.
             Guid? testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             if (testUuid != null)
             {
-                //Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.MARKDOWN);
-                //client.Log(logItem);
-
-                /*
-                var (logItem, attachment) = log.ConvertToLogAndAttachment(testRunUuid.Value, testUuid.Value);
-                client.Log(logItem);
-                if (attachment != null)
-                {
-                    client.SendAttachment(attachment);
-                }
-                */
-
                 //TODO?~ For some reason, this sends the attachment as a SEPARATE log entry...??
                 Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.MARKDOWN);
                 client.Log(logItem);
                 if (log.Attachment != null)
                 {
-                    string fileName = "file0.jpg"; //TODO!~ Use the REAL filename!!
+                    string fileName = log.Attachment.FileName;
                     Attachment attachment = new Attachment(testRunUuid.Value, testUuid.Value, log.Level, fileName, new Attachment.AttachmentFile(fileName, log.Attachment.MimeType, log.Attachment.Data));
                     client.SendAttachment(attachment);
                 }
@@ -211,15 +193,14 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             ILogFormatter logFormatter = new FileLogFormatter(); //TODO!~ Make this a static member, not something that is initialized every time this method is called.
             logFormatter.FormatLog(text, out string newLogMessage, out LogMessageAttachment attachment);
 
-            //var logMessage = new LogMessage { Message = text, Attachment = null, Level = LogLevel.info /* ? */, Time = DateTime.Now };
             var logMessage = new LogMessage { Message = newLogMessage, Attachment = attachment, Level = LogLevel.info /* ? */, Time = DateTime.Now };
 
             return logMessage;
         }
 
-        protected LogMessageAttachment GetAttachFromContent(string mimeType, byte[] content)
+        protected LogMessageAttachment GetAttachFromContent(string mimeType, byte[] content, string fileName)
         {
-            return new LogMessageAttachment(mimeType, content);
+            return new LogMessageAttachment(mimeType, content, fileName);
         }
 
         public virtual void Dispose()

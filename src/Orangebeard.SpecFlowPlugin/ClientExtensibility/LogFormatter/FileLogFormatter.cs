@@ -13,7 +13,6 @@ namespace Orangebeard.Shared.Extensibility.LogFormatter
         public int Order => 10;
 
         /// <inheritdoc/>
-        //public bool FormatLog(CreateLogItemRequest logRequest)
         public bool FormatLog(string logMessage, out string newLogMessage, out LogMessageAttachment logMessageAttachment)
         {
             newLogMessage = logMessage;
@@ -33,8 +32,7 @@ namespace Orangebeard.Shared.Extensibility.LogFormatter
                     {
                         var mimeType = MimeTypes.MimeTypeMap.GetMimeType(Path.GetExtension(filePath));
 
-                        //logRequest.Attach = new LogItemAttach(mimeType, File.ReadAllBytes(filePath));
-                        logMessageAttachment = new LogMessageAttachment(mimeType, File.ReadAllBytes(filePath));
+                        logMessageAttachment = new LogMessageAttachment(mimeType, File.ReadAllBytes(filePath), filePath);
 
                         return true;
                     }
