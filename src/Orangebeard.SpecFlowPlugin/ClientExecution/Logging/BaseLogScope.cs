@@ -11,17 +11,11 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 {
     abstract public class BaseLogScope : ILogScope
     {
-        //TODO?+ protected IExtensionManager _extensionManager;
-
         protected ICommandsSource _commandsSource;
 
-        //TODO?+ Add IExtensionManager and [I]CommandsSource?
-        public BaseLogScope(ILogContext logContext /*, IExtensionManager extensionManager*/ /*, ICommandsSource commandsSource */)
+        public BaseLogScope(ILogContext logContext)
         {
             Context = logContext;
-            //TODO?+ _extensionManager = extensionManager;
-            //TODO?+ _commandsSource = commandsSource;
-
             BeginTime = DateTime.UtcNow;
         }
 
@@ -52,13 +46,11 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
             var testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             Guid testRunUuid = OrangebeardAddIn.TestrunUuid.Value; //TODO?+ Check if OrangebeardAddIn.TestrunUuid != null
-            //TODO?+ Include extensionManager and _commandsSource?
-            //TODO?~ Note that this was first handled in CommandsSource_OnBeginLogScopeCommand . That thing isn't called anymore. But it did some bookkeeping that we should do too....
             
             StartTestItem startTestItem = new StartTestItem(
                 testRunUUID: testRunUuid,
                 name: name,
-                type: TestItemType.STEP, //TODO!+ Check if it should be SUITE, TEST, or STEP. Seems it should always be TestItemType.STEP .
+                type: TestItemType.STEP,
                 description: name, //TODO?-  or just empty string or null?
                 attributes: new HashSet<Attribute>()
                 );
@@ -67,15 +59,8 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             NewTestContext newTestContext = new NewTestContext(SpecFlowPlugin.Context.Current, childTestUuid);
             SpecFlowPlugin.Context.Current = newTestContext;
 
-
-            /* ORIGINAL CODE:
-             *   var logScope = new LogScope(Context, _extensionManager, _commandsSource, Root, this, name);
-             *   Context.Log = logScope;
-             *   return logScope;
-             */
-            var logScope = new LogScope(Context /*, _extensionManager */ /*, _commandsSource*/, Root, this, name);
-                //TODO!+ The bookkeeping from CommandsSource_OnBeginLogScopeCommand.
-                OrangebeardAddIn.LogScopes[logScope.Id] = childTestUuid.Value;
+            var logScope = new LogScope(Context, Root, this, name);
+            OrangebeardAddIn.LogScopes[logScope.Id] = childTestUuid.Value;
             Context.Log = logScope;
             return logScope;
         }
@@ -192,7 +177,6 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         protected LogMessage GetDefaultLogRequest(string text)
         {
-            //ILogFormatter logFormatter = new FileLogFormatter(); //TODO!~ Make this a static member, not something that is initialized every time this method is called.
             fileFormatter.FormatLog(text, out string newLogMessage, out LogMessageAttachment attachment);
 
             var logMessage = new LogMessage { Message = newLogMessage, Attachment = attachment, Level = LogLevel.info /* ? */, Time = DateTime.Now };

@@ -268,7 +268,6 @@ namespace Orangebeard.SpecFlowPlugin
         {
             string description = this.ScenarioContext.ScenarioInfo.Description;
 
-            //TODO?~ Extract this part to a separate method?
             // fetch scenario parameters (from Examples block)
             var arguments = this.ScenarioContext.ScenarioInfo.Arguments;
             if (arguments != null && arguments.Count > 0)

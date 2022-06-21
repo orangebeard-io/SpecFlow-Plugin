@@ -12,95 +12,9 @@ using TechTalk.SpecFlow;
 namespace Orangebeard.SpecFlowPlugin.LogHandler
 {
     //TODO?- The  On...Command handlers aren't initialized, or called. Their code has been copied elsewhere.
-    public class ContextAwareLogHandler : ICommandsListener
+    public class ContextAwareLogHandler //: ICommandsListener
     {
         private readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
-
-        public void Initialize(ICommandsSource commandsSource)
-        {
-            commandsSource.OnBeginLogScopeCommand += CommandsSource_OnBeginLogScopeCommand;
-            commandsSource.OnEndLogScopeCommand += CommandsSource_OnEndLogScopeCommand;
-            commandsSource.OnLogMessageCommand += CommandsSource_OnLogMessageCommand;
-        }
-
-        //TODO?- This one doesn't get called. Relevant code is in BaseLogScope.
-        private void CommandsSource_OnLogMessageCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogMessageCommandArgs args)
-        {
-            var logScope = args.LogScope;
-
-            Guid? testItemUuid;
-
-            if (logScope != null && OrangebeardAddIn.LogScopes.ContainsKey(logScope.Id))
-            {
-                testItemUuid = OrangebeardAddIn.LogScopes[logScope.Id];
-            }
-            else
-            {
-                // TODO: investigate SpecFlow how to understand current scenario context
-                testItemUuid = GetCurrentTestReporter();
-            }
-
-            if (testItemUuid != null)
-            {
-                var testRunUuid = OrangebeardAddIn.TestrunUuid;
-                var client = OrangebeardAddIn.Client;
-                var (log,attachment) = args.LogMessage.ConvertToLogAndAttachment(testRunUuid.Value, testItemUuid.Value);
-                client.Log(log);
-                if (attachment != null)
-                {
-                    client.SendAttachment(attachment);
-                }
-            }
-            else
-            {
-                _traceLogger.Warn("Unknown current context to log message.");
-            }
-        }
-
-        //TODO?~ Was a "private" instance method and supposed to be called on a hook. Except that didn't happen.
-        // Made static for the moment, see if we fix the hook or not.
-        public static void CommandsSource_OnBeginLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args)
-        {
-            var logScope = args.LogScope;
-
-            Guid? testItemUuid = null;
-
-            if (logScope.Parent != null)
-            {
-                if (OrangebeardAddIn.LogScopes.ContainsKey(logScope.Parent.Id))
-                {
-                    testItemUuid = OrangebeardAddIn.LogScopes[logScope.Parent.Id];
-                }
-            }
-            else
-            {
-                testItemUuid = GetCurrentTestReporter();
-            }
-
-            if (testItemUuid != null)
-            {
-                var testRunUuid = OrangebeardAddIn.TestrunUuid;
-                var client = OrangebeardAddIn.Client;
-
-                //TODO?~ Original code set the start time to logScope.BeginTime
-                var startTestItem = new StartTestItem(
-                    testRunUUID: testRunUuid.Value,
-                    name: logScope.Name,
-                    type: TestItemType.STEP,
-                    description: null,
-                    attributes: null
-                );
-                var nestedStep = client.StartTestItem(testItemUuid, startTestItem);
-                //TODO?+ Check if nestedStep == null?
-                Context.Current = new NewTestContext(Context.Current, nestedStep.Value);
-                OrangebeardAddIn.LogScopes[logScope.Id] = nestedStep.Value;
-
-            }
-            else
-            {
-                //TODO?+ _traceLogger.Warn("Unknown current step context to begin new log scope.");
-            }
-        }
 
         //TODO?~ Was a "private" instance method, and supposed to be called on a hook. Except that didn't happen.
         // Made static for the moment, see if we fix the hook or not.
@@ -166,24 +80,6 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             {
                 _activeFeatureContext.Value = value;
             }
-        }
-
-        //TODO?~ Was an instance method.
-        public static Guid? GetCurrentTestReporter()
-        {
-            var testReporter = OrangebeardAddIn.GetStepTestReporter(ActiveStepContext);
-
-            if (testReporter == null)
-            {
-                testReporter = OrangebeardAddIn.GetScenarioTestReporter(ActiveScenarioContext);
-            }
-
-            if (testReporter == null)
-            {
-                testReporter = OrangebeardAddIn.GetFeatureTestReporter(ActiveFeatureContext);
-            }
-
-            return testReporter;
         }
 
         //TODO?~ Was a private instance method. Should be a general translate function... not something every class can modify, but still something everyone could use for lookup.
