@@ -26,6 +26,17 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public override string Name { get; }
 
+        //TODO!- For debugging.
+        public void PrintTree(int indentation)
+        {
+            
+            Console.WriteLine($"Name=${Name}".PadLeft(indentation));
+            if (Parent != null && Parent is LogScope)
+            {
+                (Parent as LogScope).PrintTree(indentation + 2);
+            }
+        }
+
         public override void Dispose()
         {
             base.Dispose();

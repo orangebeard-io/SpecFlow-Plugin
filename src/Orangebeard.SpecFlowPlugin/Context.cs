@@ -8,7 +8,6 @@ namespace Orangebeard.SpecFlowPlugin
     {
         public NewTestContext(NewTestContext parent, Guid? testUuid)
         {
-            Parent = parent;
             TestUuid = testUuid;
             if (parent == null)
             {
@@ -17,7 +16,6 @@ namespace Orangebeard.SpecFlowPlugin
                 ILogContext launchContext = new LaunchContext { Log = null };
                 Log = new LogScope(logContext: launchContext, root: null, parent: null, name: "Dummy scope name."); //TODO!~ Better scope name! Note that it is not allowed to be null or empty. Maybe remove scope names altogether.
                 launchContext.Log = Log; //TODO?~ Is this circularity OK or will it give us an endless loop?
-                
             }
             else
             {
@@ -26,7 +24,6 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        public NewTestContext Parent { get; private set; }
         public Guid? TestUuid { get; private set; }
 
         //TODO!~ Make sure this thing isn't null....

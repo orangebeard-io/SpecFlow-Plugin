@@ -335,20 +335,23 @@ namespace Orangebeard.SpecFlowPlugin
 
                 if (currentScenario != null)
                 {
+                    // Workaround: error messages are usually stack traces, which don't display nicely in markdown.
+                    //  For this reason, when the log is at the level of an error, we display in plain text instead of markdown.
+
                     if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.TestError)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.ToString(), LogFormat.MARKDOWN);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.ToString(), LogFormat.PLAIN_TEXT);
                         _client.Log(log);
 
                     }
                     else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.BindingError)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.Message, LogFormat.MARKDOWN);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, this.ScenarioContext.TestError?.Message, LogFormat.PLAIN_TEXT);
                         _client.Log(log);
                     }
                     else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep)
                     {
-                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, new MissingStepDefinitionException().Message, LogFormat.MARKDOWN);
+                        var log = new Log(_testRunUuid.Value, currentScenario.Value, LogLevel.error, new MissingStepDefinitionException().Message, LogFormat.PLAIN_TEXT);
                         _client.Log(log);
                     }
 

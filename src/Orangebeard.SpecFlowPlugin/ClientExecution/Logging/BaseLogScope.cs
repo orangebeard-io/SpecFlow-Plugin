@@ -51,7 +51,7 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
                 testRunUUID: testRunUuid,
                 name: name,
                 type: TestItemType.STEP,
-                description: name, //TODO?-  or just empty string or null?
+                description: null,
                 attributes: new HashSet<Attribute>()
                 );
             OrangebeardV2Client client = OrangebeardAddIn.Client;
@@ -163,13 +163,19 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
             Guid? testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             if (testUuid != null)
             {
-                //TODO?~ For some reason, this sends the attachment as a SEPARATE log entry...??
-                Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, LogFormat.MARKDOWN);
-                client.Log(logItem);
-                if (log.Attachment != null)
+                // Workaround: error messages are usually stack traces, which don't display nicely in markdown.
+                //  For this reason, when the log is at the level of an error, we display in plain text instead of markdown.
+                var logFormat = log.Level == LogLevel.error ? LogFormat.PLAIN_TEXT : LogFormat.MARKDOWN;
+                Log logItem = new Log(testRunUuid.Value, testUuid.Value, log.Level, log.Message, logFormat);
+                if (log.Attachment == null)
+                {
+                    client.Log(logItem);
+                }
+                else 
                 {
                     string fileName = log.Attachment.FileName;
-                    Attachment attachment = new Attachment(testRunUuid.Value, testUuid.Value, log.Level, fileName, new Attachment.AttachmentFile(fileName, log.Attachment.MimeType, log.Attachment.Data));
+                    Attachment.AttachmentFile attachmentFile = new Attachment.AttachmentFile(fileName, log.Attachment.MimeType, log.Attachment.Data);
+                    Attachment attachment = new Attachment(testRunUuid.Value, testUuid.Value, log.Level, log.Message, attachmentFile);
                     client.SendAttachment(attachment);
                 }
             }
