@@ -234,7 +234,8 @@ namespace Orangebeard.SpecFlowPlugin
                 {
                     string description = DetermineDescription();
 
-                    //TODO?~ In the original code, "BeforeScenario" starts a Step. But in our system, it is called for "Add two numbers",  which is a TestItemType.TEST .
+                    // In the original code, "BeforeScenario" starts a Step. But in our system, it is called for "Add two numbers",  which is a TestItemType.TEST .
+                    // However, "Add two numbers" IS a Scenario.
                     var startTestItem = new StartTestItem(
                         testRunUUID: _testRunUuid.Value,
                         name: this.ScenarioContext.ScenarioInfo.Title,
@@ -441,6 +442,8 @@ namespace Orangebeard.SpecFlowPlugin
 
                 if (!eventArg.Canceled)
                 {
+                    Context.Current = Context.Current.Parent; // Context.Current.Log.Parent;
+
                     _client.FinishTestItem(currentStep.Value, finishStepItem);
                     OrangebeardAddIn.RemoveStepTestReporter(this.StepContext, currentStep.Value);
                     OrangebeardAddIn.OnAfterStepFinished(this, eventArg);

@@ -9,6 +9,7 @@ namespace Orangebeard.SpecFlowPlugin
         public NewTestContext(NewTestContext parent, Guid? testUuid)
         {
             TestUuid = testUuid;
+            Parent = parent;
             if (parent == null)
             {
                 //TODO?~ Also find the values for the other parameters (logContext, root, and parent)? Or remove them?
@@ -29,6 +30,8 @@ namespace Orangebeard.SpecFlowPlugin
         //TODO!~ Make sure this thing isn't null....
         public ILogScope Log { get; private set; }
         //TODO?+ Log function?
+
+        public NewTestContext Parent { get; private set; }
     }
 
     /// <summary>
