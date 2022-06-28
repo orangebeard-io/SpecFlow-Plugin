@@ -48,6 +48,7 @@ namespace Orangebeard.SpecFlowPlugin
             });
             */
             FinishTestItem finishTestItem = new FinishTestItem(testRunUuid.Value, Status.SKIPPED);
+            Context.Current = Context.Current.Parent;
             client.FinishTestItem(skippedStepUuid.Value, finishTestItem);
         }
     }

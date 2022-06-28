@@ -115,6 +115,7 @@ namespace Orangebeard.SpecFlowPlugin
                     if (!eventArg.Canceled)
                     {
                         _client.FinishTestRun(_testRunUuid.Value, finishTestRun);
+                        Context.Current = Context.Current.Parent; //TODO?+ Add null check?
 
                         var sw = Stopwatch.StartNew();
 
@@ -195,6 +196,9 @@ namespace Orangebeard.SpecFlowPlugin
 
                     if (currentFeature != null /* && currentFeature.FinishTask == null */ && remainingThreadCount == 0)
                     {
+                        //TODO?~ Apparently we only get here if the test item is Skipped or Stopped...
+                        // Where is the _client.FinishTestItem(...) called if the item is Failed or Passed?
+                        // We may need to update the Context.Current in that place, too!!
                         var finishTestItem = new FinishTestItem(_testRunUuid.Value, Status.SKIPPED);
 
                         var eventArg = new TestItemFinishedEventArgs(_client, finishTestItem, currentFeature.Value, featureContext, null);
@@ -202,6 +206,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                         if (!eventArg.Canceled)
                         {
+                            Context.Current = Context.Current.Parent; // Context.Current.Log.Parent;
                             _client.FinishTestItem(_testRunUuid.Value, finishTestItem);
 
                             OrangebeardAddIn.OnAfterFeatureFinished(null, new TestItemFinishedEventArgs(_client, finishTestItem, currentFeature.Value, featureContext, null));
@@ -365,6 +370,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                     if (!eventArg.Canceled)
                     {
+                        Context.Current = Context.Current.Parent; // Context.Current.Log.Parent;
                         _client.FinishTestItem(currentScenario.Value, finishTestItem);
 
                         OrangebeardAddIn.OnAfterScenarioFinished(this, new TestItemFinishedEventArgs(_client, finishTestItem, currentScenario.Value, this.FeatureContext, this.ScenarioContext));

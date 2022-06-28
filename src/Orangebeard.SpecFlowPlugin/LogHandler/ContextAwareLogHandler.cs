@@ -30,6 +30,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
                 var status = _nestedStepStatusMap[logScope.Status];
                 var finishTestItem = new FinishTestItem(testRunUuid.Value, status);
                 Guid testItem = OrangebeardAddIn.LogScopes[logScope.Id];
+                Context.Current = Context.Current.Parent;
                 client.FinishTestItem(testItem, finishTestItem);
 
                 OrangebeardAddIn.LogScopes.TryRemove(logScope.Id, out Guid _);
