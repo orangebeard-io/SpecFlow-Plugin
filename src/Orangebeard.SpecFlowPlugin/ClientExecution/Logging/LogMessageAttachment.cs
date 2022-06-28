@@ -1,11 +1,13 @@
-﻿namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
+﻿using System.Linq;
+
+namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 {
     public class LogMessageAttachment
     {
         public LogMessageAttachment(string mimeType, byte[] data, string fileName)
         {
             MimeType = mimeType;
-            Data = data; //TODO?~ Explicit array copy? Safer but takes time.
+            Data = data.ToArray();
             FileName = fileName;
         }
 

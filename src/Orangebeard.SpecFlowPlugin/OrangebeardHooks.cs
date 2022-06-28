@@ -26,56 +26,6 @@ namespace Orangebeard.SpecFlowPlugin
         private static OrangebeardV2Client _client;
         private static Guid? _testRunUuid;
 
-        [BeforeTestRun(Order = -20000)]
-        public static void BeforeTestRun()
-        {
-            try
-            {
-                var config = Initialize();
-
-                string name = config.GetValue(ConfigurationPath.TestSetName, "SpecFlow Launch");
-                var attributes = config.GetKeyValues("TestSet:Attributes", new List<KeyValuePair<string, string>>()).Select(a => new Attribute(a.Key, a.Value));
-                string description = config.GetValue(ConfigurationPath.TestSetDescription, string.Empty);
-                var startRequest = new StartTestRun(name, description, new HashSet<Attribute>(attributes));
-
-                var eventArg = new RunStartedEventArgs(_client, startRequest);
-                OrangebeardAddIn.OnBeforeRunStarted(null, eventArg);
-
-                if (eventArg.TestRunUuid != null) //TODO?~ It's actually eventArg.TestRunUuid = {00000000-0000-0000-0000-000000000000} ....
-                {
-                    _testRunUuid = eventArg.TestRunUuid;
-                }
-
-                if (!eventArg.Canceled)
-                {
-                    //_launchReporter = _launchReporter ?? new LaunchReporter(_service, config, null, Orangebeard.Shared.Extensibility.ExtensionManager.Instance);
-                    if (_testRunUuid == null || _testRunUuid == Guid.Empty)
-                    {
-                        _testRunUuid = _client.StartTestRun(startRequest); //TODO?+ Some error handling if _testRunUuid == null , i.e. if the run fails to start?
-                    }
-
-                    OrangebeardAddIn.TestrunUuid = _testRunUuid;
-                    if (_testRunUuid == null)
-                    {
-                        //TODO!+ Error handling or warning.
-                    }
-                    else
-                    {
-                        Context.Current = new NewTestContext(null, _testRunUuid.Value);
-
-                        OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startRequest, _testRunUuid.Value));
-                    }
-
-                }
-
-                OrangebeardAddIn.TestrunUuid = _testRunUuid; //TODO!- Already handled by OnAfterRunStarted...
-            }
-            catch (Exception exp)
-            {
-                _traceLogger.Error(exp.ToString());
-            }
-        }
-
         private static IConfiguration Initialize()
         {
             var args = new InitializingEventArgs(Plugin.Config);
@@ -100,6 +50,55 @@ namespace Orangebeard.SpecFlowPlugin
             return args.Config;
         }
 
+        [BeforeTestRun(Order = -20000)]
+        public static void BeforeTestRun()
+        {
+            try
+            {
+                var config = Initialize();
+
+                string name = config.GetValue(ConfigurationPath.TestSetName, "SpecFlow Launch");
+                var attributes = config.GetKeyValues("TestSet:Attributes", new List<KeyValuePair<string, string>>()).Select(a => new Attribute(a.Key, a.Value));
+                string description = config.GetValue(ConfigurationPath.TestSetDescription, string.Empty);
+                var startRequest = new StartTestRun(name, description, new HashSet<Attribute>(attributes));
+
+                var eventArg = new RunStartedEventArgs(_client, startRequest);
+                OrangebeardAddIn.OnBeforeRunStarted(null, eventArg);
+
+                if (eventArg.TestRunUuid != null && eventArg.TestRunUuid != Guid.Empty)
+                {
+                    _testRunUuid = eventArg.TestRunUuid;
+                }
+
+                if (!eventArg.Canceled)
+                {
+                    if (_testRunUuid == null || _testRunUuid == Guid.Empty)
+                    {
+                        _testRunUuid = _client.StartTestRun(startRequest);
+                    }
+
+                    OrangebeardAddIn.TestrunUuid = _testRunUuid;
+                    if (_testRunUuid == null)
+                    {
+                        _traceLogger.Error("Test run failed to start!");
+                    }
+                    else
+                    {
+                        Context.Current = new NewTestContext(null, _testRunUuid.Value);
+
+                        OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startRequest, _testRunUuid.Value));
+                    }
+
+                }
+
+                OrangebeardAddIn.TestrunUuid = _testRunUuid;
+            }
+            catch (Exception exp)
+            {
+                _traceLogger.Error(exp.ToString());
+            }
+        }
+       
         [AfterTestRun(Order = 20000)]
         public static void AfterTestRun()
         {
@@ -115,13 +114,11 @@ namespace Orangebeard.SpecFlowPlugin
                     if (!eventArg.Canceled)
                     {
                         _client.FinishTestRun(_testRunUuid.Value, finishTestRun);
-                        Context.Current = Context.Current.Parent; //TODO?+ Add null check?
+                        Context.Current = Context.Current.Parent;
 
                         var sw = Stopwatch.StartNew();
 
-                        //TODO?- Is this still necessary? I don't think we have an equivalent to _launchReporter.Sync() in the Orangebeard V2 client...
                         _traceLogger.Info($"Finishing Orangebeard Run...");
-                        //TODO?+ _launchReporter.Sync();
                         _traceLogger.Info($"Elapsed: {sw.Elapsed}");
 
                         OrangebeardAddIn.OnAfterRunFinished(null, new RunFinishedEventArgs(_client, finishTestRun, _testRunUuid.Value));
@@ -147,7 +144,7 @@ namespace Orangebeard.SpecFlowPlugin
                     {
                         var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(featureContext);
 
-                        if (currentFeature == null /* || currentFeature.FinishTask != null */)
+                        if (currentFeature == null)
                         {
                             var startTestItem = new StartTestItem(
                                 testRunUUID: _testRunUuid.Value,
@@ -163,11 +160,8 @@ namespace Orangebeard.SpecFlowPlugin
                             if (!eventArg.Canceled)
                             {
                                 currentFeature = _client.StartTestItem(null, startTestItem);
-                                //TODO?+ Check that currentFeature != null ?
                                 Context.Current = new NewTestContext(Context.Current, currentFeature.Value);
-
                                 OrangebeardAddIn.SetFeatureTestReporter(featureContext, currentFeature.Value);
-
                                 OrangebeardAddIn.OnAfterFeatureStarted(null, new TestItemStartedEventArgs(_client, startTestItem, currentFeature, featureContext, null));
                             }
                         }
@@ -194,11 +188,8 @@ namespace Orangebeard.SpecFlowPlugin
                     var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(featureContext);
                     var remainingThreadCount = OrangebeardAddIn.DecrementFeatureThreadCount(featureContext);
 
-                    if (currentFeature != null /* && currentFeature.FinishTask == null */ && remainingThreadCount == 0)
+                    if (currentFeature != null && remainingThreadCount == 0)
                     {
-                        //TODO?~ Apparently we only get here if the test item is Skipped or Stopped...
-                        // Where is the _client.FinishTestItem(...) called if the item is Failed or Passed?
-                        // We may need to update the Context.Current in that place, too!!
                         var finishTestItem = new FinishTestItem(_testRunUuid.Value, Status.SKIPPED);
 
                         var eventArg = new TestItemFinishedEventArgs(_client, finishTestItem, currentFeature.Value, featureContext, null);
@@ -206,7 +197,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                         if (!eventArg.Canceled)
                         {
-                            Context.Current = Context.Current.Parent; // Context.Current.Log.Parent;
+                            Context.Current = Context.Current.Parent;
                             _client.FinishTestItem(_testRunUuid.Value, finishTestItem);
 
                             OrangebeardAddIn.OnAfterFeatureFinished(null, new TestItemFinishedEventArgs(_client, finishTestItem, currentFeature.Value, featureContext, null));
@@ -255,11 +246,8 @@ namespace Orangebeard.SpecFlowPlugin
                     if (!eventArg.Canceled)
                     {
                         var currentScenario = _client.StartTestItem(currentFeature, startTestItem);
-                        //TODO?~ Null check on `currentScenario` ?
                         Context.Current = new NewTestContext(Context.Current, currentScenario.Value);
-
                         OrangebeardAddIn.SetScenarioTestReporter(this.ScenarioContext, currentScenario.Value);
-
                         OrangebeardAddIn.OnAfterScenarioStarted(this, new TestItemStartedEventArgs(_client, startTestItem, currentFeature, this.FeatureContext, this.ScenarioContext));
                     }
                 }
@@ -370,11 +358,9 @@ namespace Orangebeard.SpecFlowPlugin
 
                     if (!eventArg.Canceled)
                     {
-                        Context.Current = Context.Current.Parent; // Context.Current.Log.Parent;
+                        Context.Current = Context.Current.Parent;
                         _client.FinishTestItem(currentScenario.Value, finishTestItem);
-
                         OrangebeardAddIn.OnAfterScenarioFinished(this, new TestItemFinishedEventArgs(_client, finishTestItem, currentScenario.Value, this.FeatureContext, this.ScenarioContext));
-
                         OrangebeardAddIn.RemoveScenarioTestReporter(this.ScenarioContext, currentScenario.Value);
                     }
                 }
@@ -406,9 +392,7 @@ namespace Orangebeard.SpecFlowPlugin
                 if (!eventArg.Canceled)
                 {
                     var stepUuid = _client.StartTestItem(currentScenario.Value, stepInfo);
-                    //TODO?+ Null check on stepUuid ?
                     Context.Current = new NewTestContext(Context.Current, stepUuid.Value);
-
                     OrangebeardAddIn.SetStepTestReporter(this.StepContext, stepUuid.Value);
 
                     // step parameters
@@ -448,7 +432,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                 if (!eventArg.Canceled)
                 {
-                    Context.Current = Context.Current.Parent; // Context.Current.Log.Parent;
+                    Context.Current = Context.Current.Parent;
 
                     _client.FinishTestItem(currentStep.Value, finishStepItem);
                     OrangebeardAddIn.RemoveStepTestReporter(this.StepContext, currentStep.Value);

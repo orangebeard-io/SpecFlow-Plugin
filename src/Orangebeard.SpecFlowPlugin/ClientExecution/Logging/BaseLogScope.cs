@@ -25,7 +25,6 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public virtual ILogScope Root { get; protected set; }
 
-        //TODO!+ Make sure that this thing is initialized....
         public virtual ILogContext Context { get; }
 
         public virtual string Name { get; }
@@ -40,12 +39,8 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public virtual ILogScope BeginScope(string name)
         {
-            // NOTE: In the current implementation, the TestRunUuid and TestUuid are NULL when BeginScope is first called!
-            // Need to fix this. Also, maybe keep TestUuid in OrangebeardAddIn ?
-            // Note that we can use `OrangebeardAddIn.GetScenarioTestReporter` and its brothers to get a Suite/Test/Step UUID given a SpecFlow Context.
-
             var testUuid = SpecFlowPlugin.Context.Current.TestUuid;
-            Guid testRunUuid = OrangebeardAddIn.TestrunUuid.Value; //TODO?+ Check if OrangebeardAddIn.TestrunUuid != null
+            Guid testRunUuid = OrangebeardAddIn.TestrunUuid.Value;
             
             StartTestItem startTestItem = new StartTestItem(
                 testRunUUID: testRunUuid,
@@ -74,9 +69,9 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public void Debug(string message, string mimeType, byte[] content)
         {
+            // GetDefaultLogRequest already finds the content and places it in logMessage.Attachment, so the parameters mimetype and content can be safely ignored.
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.debug;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -89,9 +84,9 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public void Error(string message, string mimeType, byte[] content)
         {
+            // GetDefaultLogRequest already finds the content and places it in logMessage.Attachment, so the parameters mimetype and content can be safely ignored.
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.error;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -104,9 +99,9 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public void Fatal(string message, string mimeType, byte[] content)
         {
+            // GetDefaultLogRequest already finds the content and places it in logMessage.Attachment, so the parameters mimetype and content can be safely ignored.
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.error; // WAS: LogMessageLevel.Fatal
-            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -119,9 +114,9 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public void Info(string message, string mimeType, byte[] content)
         {
+            // GetDefaultLogRequest already finds the content and places it in logMessage.Attachment, so the parameters mimetype and content can be safely ignored.
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.info;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -134,9 +129,9 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public void Trace(string message, string mimeType, byte[] content)
         {
+            // GetDefaultLogRequest already finds the content and places it in logMessage.Attachment, so the parameters mimetype and content can be safely ignored.
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.info; // WAS: LogMessageLevel.Trace
-            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
@@ -149,17 +144,16 @@ namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
 
         public void Warn(string message, string mimeType, byte[] content)
         {
+            // GetDefaultLogRequest already finds the content and places it in logMessage.Attachment, so the parameters mimetype and content can be safely ignored.
             var logMessage = GetDefaultLogRequest(message);
             logMessage.Level = LogLevel.warn;
-            logMessage.Attachment = GetAttachFromContent(mimeType, content, logMessage.Attachment.FileName); //TODO?- Isn't this ALREADY in logMessage.Attachment?
             Message(logMessage);
         }
 
-        //TODO?~ The only reason this thing isn't a static method, is that BaseLogScope needs to implement ILogScope.
         public virtual void Message(LogMessage log)
         {
             OrangebeardV2Client client = OrangebeardAddIn.Client;
-            Guid? testRunUuid = OrangebeardAddIn.TestrunUuid; //TODO?~ Test if it isn't null... or make it not a nullable thing in the first place, in OrangebeardAddIn.
+            Guid? testRunUuid = OrangebeardAddIn.TestrunUuid;
             Guid? testUuid = SpecFlowPlugin.Context.Current.TestUuid;
             if (testUuid != null)
             {

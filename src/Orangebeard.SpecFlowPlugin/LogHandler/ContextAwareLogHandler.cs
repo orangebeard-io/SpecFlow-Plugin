@@ -11,13 +11,10 @@ using TechTalk.SpecFlow;
 
 namespace Orangebeard.SpecFlowPlugin.LogHandler
 {
-    //TODO?- The  On...Command handlers aren't initialized, or called. Their code has been copied elsewhere.
-    public class ContextAwareLogHandler //: ICommandsListener
+    public class ContextAwareLogHandler
     {
-        private readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
+        private static readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
 
-        //TODO?~ Was a "private" instance method, and supposed to be called on a hook. Except that didn't happen.
-        // Made static for the moment, see if we fix the hook or not.
         public static void CommandsSource_OnEndLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args)
         {
             var logScope = args.LogScope;
@@ -26,7 +23,6 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             {
                 var testRunUuid = OrangebeardAddIn.TestrunUuid;
                 var client = OrangebeardAddIn.Client;
-                //TODO?~ In the original code, EndTime is set to logScope.EndTime.Value
                 var status = _nestedStepStatusMap[logScope.Status];
                 var finishTestItem = new FinishTestItem(testRunUuid.Value, status);
                 Guid testItem = OrangebeardAddIn.LogScopes[logScope.Id];
@@ -37,7 +33,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
             else
             {
-                //TODO?+ _traceLogger.Warn($"Unknown current step context to end log scope with `{logScope.Id}` ID.");
+                _traceLogger.Warn($"Unknown current step context to end log scope with `{logScope.Id}` ID.");
             }
         }
 
@@ -83,8 +79,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
         }
 
-        //TODO?~ Was a private instance method. Should be a general translate function... not something every class can modify, but still something everyone could use for lookup.
-        public static Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
+        public static readonly Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
             { LogScopeStatus.InProgress, Status.IN_PROGRESS },
             { LogScopeStatus.Passed, Status.PASSED },
             { LogScopeStatus.Failed, Status.FAILED },
