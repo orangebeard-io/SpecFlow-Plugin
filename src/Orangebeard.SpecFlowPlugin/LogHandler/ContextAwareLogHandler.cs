@@ -1,103 +1,32 @@
-﻿using Orangebeard.Client.Abstractions.Models;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Execution.Logging;
-using Orangebeard.Shared.Extensibility;
-using Orangebeard.Shared.Extensibility.Commands;
+﻿using Orangebeard.Client.Entities;
 using Orangebeard.Shared.Internal.Logging;
-using Orangebeard.Shared.Reporter;
+using Orangebeard.SpecFlowPlugin.ClientExecution.Logging;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using TechTalk.SpecFlow;
 
 namespace Orangebeard.SpecFlowPlugin.LogHandler
 {
-    public class ContextAwareLogHandler : ICommandsListener
+    public class ContextAwareLogHandler
     {
-        private readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
+        private static readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<ContextAwareLogHandler>();
 
-        public void Initialize(ICommandsSource commandsSource)
-        {
-            commandsSource.OnBeginLogScopeCommand += CommandsSource_OnBeginLogScopeCommand;
-            commandsSource.OnEndLogScopeCommand += CommandsSource_OnEndLogScopeCommand;
-            commandsSource.OnLogMessageCommand += CommandsSource_OnLogMessageCommand;
-        }
-
-        private void CommandsSource_OnLogMessageCommand(Orangebeard.Shared.Execution.ILogContext logContext, Orangebeard.Shared.Extensibility.Commands.CommandArgs.LogMessageCommandArgs args)
+        public static void CommandsSource_OnEndLogScopeCommand(ClientExecution.ILogContext logContext, ClientExtensibility.Commands.CommandArgs.LogScopeCommandArgs args)
         {
             var logScope = args.LogScope;
-
-            ITestReporter testReporter;
-
-            if (logScope != null && OrangebeardAddIn.LogScopes.ContainsKey(logScope.Id))
-            {
-                testReporter = OrangebeardAddIn.LogScopes[logScope.Id];
-            }
-            else
-            {
-                // TODO: investigate SpecFlow how to understand current scenario context
-                testReporter = GetCurrentTestReporter();
-            }
-
-            if (testReporter != null)
-            {
-                testReporter.Log(args.LogMessage.ConvertToRequest());
-            }
-            else
-            {
-                _traceLogger.Warn("Unknown current context to log message.");
-            }
-        }
-
-        private void CommandsSource_OnBeginLogScopeCommand(Orangebeard.Shared.Execution.ILogContext logContext, Orangebeard.Shared.Extensibility.Commands.CommandArgs.LogScopeCommandArgs args)
-        {
-            var logScope = args.LogScope;
-
-            var startRequest = new StartTestItemRequest
-            {
-                Name = logScope.Name,
-                StartTime = logScope.BeginTime,
-                HasStats = false
-            };
-
-            ITestReporter testReporter = null;
-
-            if (logScope.Parent != null)
-            {
-                if (OrangebeardAddIn.LogScopes.ContainsKey(logScope.Parent.Id))
-                {
-                    testReporter = OrangebeardAddIn.LogScopes[logScope.Parent.Id];
-                }
-            }
-            else
-            {
-                testReporter = GetCurrentTestReporter();
-            }
-
-            if (testReporter != null)
-            {
-                var nestedStep = testReporter.StartChildTestReporter(startRequest);
-                OrangebeardAddIn.LogScopes[logScope.Id] = nestedStep;
-            }
-            else
-            {
-                _traceLogger.Warn("Unknown current step context to begin new log scope.");
-            }
-        }
-
-        private void CommandsSource_OnEndLogScopeCommand(Orangebeard.Shared.Execution.ILogContext logContext, Orangebeard.Shared.Extensibility.Commands.CommandArgs.LogScopeCommandArgs args)
-        {
-            var logScope = args.LogScope;
-
-            var finishRequest = new FinishTestItemRequest
-            {
-                EndTime = logScope.EndTime.Value,
-                Status = _nestedStepStatusMap[logScope.Status]
-            };
 
             if (OrangebeardAddIn.LogScopes.ContainsKey(logScope.Id))
             {
-                OrangebeardAddIn.LogScopes[logScope.Id].Finish(finishRequest);
-                OrangebeardAddIn.LogScopes.TryRemove(logScope.Id, out ITestReporter _);
+                var testRunUuid = OrangebeardAddIn.TestrunUuid;
+                var client = OrangebeardAddIn.Client;
+                var status = _nestedStepStatusMap[logScope.Status];
+                var finishTestItem = new FinishTestItem(testRunUuid.Value, status);
+                Guid testItem = OrangebeardAddIn.LogScopes[logScope.Id];
+                Context.Current = Context.Current.Parent;
+                client.FinishTestItem(testItem, finishTestItem);
+
+                OrangebeardAddIn.LogScopes.TryRemove(logScope.Id, out Guid _);
             }
             else
             {
@@ -147,28 +76,11 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
             }
         }
 
-        public ITestReporter GetCurrentTestReporter()
-        {
-            var testReporter = OrangebeardAddIn.GetStepTestReporter(ActiveStepContext);
-
-            if (testReporter == null)
-            {
-                testReporter = OrangebeardAddIn.GetScenarioTestReporter(ActiveScenarioContext);
-            }
-
-            if (testReporter == null)
-            {
-                testReporter = OrangebeardAddIn.GetFeatureTestReporter(ActiveFeatureContext);
-            }
-
-            return testReporter;
-        }
-
-        private Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
-            { LogScopeStatus.InProgress, Status.InProgress },
-            { LogScopeStatus.Passed, Status.Passed },
-            { LogScopeStatus.Failed, Status.Failed },
-            { LogScopeStatus.Skipped,Status.Skipped }
+        public static readonly Dictionary<LogScopeStatus, Status> _nestedStepStatusMap = new Dictionary<LogScopeStatus, Status> {
+            { LogScopeStatus.InProgress, Status.IN_PROGRESS },
+            { LogScopeStatus.Passed, Status.PASSED },
+            { LogScopeStatus.Failed, Status.FAILED },
+            { LogScopeStatus.Skipped,Status.SKIPPED }
         };
     }
 }

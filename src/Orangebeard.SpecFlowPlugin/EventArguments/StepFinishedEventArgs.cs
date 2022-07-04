@@ -1,33 +1,32 @@
-﻿using System;
-using Orangebeard.Client.Abstractions;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Reporter;
+﻿using Orangebeard.Client;
+using Orangebeard.Client.Entities;
+using System;
 using TechTalk.SpecFlow;
 
 namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class StepFinishedEventArgs : EventArgs
     {
-        public StepFinishedEventArgs(IClientService service, FinishTestItemRequest request, ITestReporter testReporter)
+        public StepFinishedEventArgs(OrangebeardV2Client client, FinishTestItem finishTestItem, Guid testUuid)
         {
-            Service = service;
-            FinishTestItemRequest = request;
-            TestReporter = testReporter;
+            Client = client;
+            FinishTestItemObject = finishTestItem;
+            TestUuid = testUuid;
         }
 
-        public StepFinishedEventArgs(IClientService service, FinishTestItemRequest request, ITestReporter testReporter, FeatureContext featureContext, ScenarioContext scenarioContext, ScenarioStepContext stepContext)
-            : this(service, request, testReporter)
+        public StepFinishedEventArgs(OrangebeardV2Client client, FinishTestItem finishTestItem, Guid testUuid, FeatureContext featureContext, ScenarioContext scenarioContext, ScenarioStepContext stepContext)
+            : this(client, finishTestItem, testUuid)
         {
             FeatureContext = featureContext;
             ScenarioContext = scenarioContext;
             StepContext = stepContext;
         }
 
-        public IClientService Service { get; }
+        public OrangebeardV2Client Client { get; }
 
-        public FinishTestItemRequest FinishTestItemRequest { get; }
+        public FinishTestItem FinishTestItemObject { get; }
 
-        public ITestReporter TestReporter { get; }
+        public Guid TestUuid { get; }
 
         public FeatureContext FeatureContext { get; }
 

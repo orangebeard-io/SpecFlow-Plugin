@@ -1,24 +1,23 @@
-﻿using System;
-using Orangebeard.Client.Abstractions;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Reporter;
+﻿using Orangebeard.Client;
+using Orangebeard.Client.Entities;
+using System;
 
 namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class RunFinishedEventArgs : EventArgs
     {
-        public RunFinishedEventArgs(IClientService service, FinishLaunchRequest request, ILaunchReporter launchReporter)
+        public RunFinishedEventArgs(OrangebeardV2Client client, FinishTestRun finishTestRun, Guid testRunUuid)
         {
-            Service = service;
-            FinishLaunchRequest = request;
-            LaunchReporter = launchReporter;
+            Client = client;
+            FinishTestRunObject = finishTestRun;
+            TestRunUuid = testRunUuid;
         }
 
-        public IClientService Service { get; }
+        public OrangebeardV2Client Client { get; }
 
-        public FinishLaunchRequest FinishLaunchRequest { get; }
+        public FinishTestRun FinishTestRunObject { get; }
 
-        public ILaunchReporter LaunchReporter { get; }
+        public Guid TestRunUuid { get; }
 
         public bool Canceled { get; set; }
     }

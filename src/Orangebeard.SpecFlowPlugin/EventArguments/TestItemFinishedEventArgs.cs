@@ -1,6 +1,5 @@
-﻿using Orangebeard.Client.Abstractions;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Reporter;
+﻿using Orangebeard.Client;
+using Orangebeard.Client.Entities;
 using System;
 using TechTalk.SpecFlow;
 
@@ -8,25 +7,25 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class TestItemFinishedEventArgs: EventArgs
     {
-        public TestItemFinishedEventArgs(IClientService service, FinishTestItemRequest request, ITestReporter testReporter)
+        public TestItemFinishedEventArgs(OrangebeardV2Client client, FinishTestItem finishTestItem, Guid testUuid)
         {
-            Service = service;
-            FinishTestItemRequest = request;
-            TestReporter = testReporter;
+            Client = client;
+            FinishTestItemObject = finishTestItem;
+            TestUuid = testUuid;
         }
 
-        public TestItemFinishedEventArgs(IClientService service, FinishTestItemRequest request, ITestReporter testReporter, FeatureContext featureContext, ScenarioContext scenarioContext)
-            : this(service, request, testReporter)
+        public TestItemFinishedEventArgs(OrangebeardV2Client client, FinishTestItem finishTestItem, Guid testUuid, FeatureContext featureContext, ScenarioContext scenarioContext)
+            : this(client, finishTestItem, testUuid)
         {
             FeatureContext = featureContext;
             ScenarioContext = scenarioContext;
         }
 
-        public IClientService Service { get; }
+        public OrangebeardV2Client Client { get; }
 
-        public FinishTestItemRequest FinishTestItemRequest { get; }
+        public FinishTestItem FinishTestItemObject { get; }
 
-        public ITestReporter TestReporter { get; }
+        public Guid TestUuid { get; }
 
         public FeatureContext FeatureContext { get; }
 
