@@ -1,9 +1,6 @@
-﻿using Orangebeard.Client;
-using Orangebeard.Client.Entities;
+﻿using Orangebeard.Client.Entities;
 using Orangebeard.Shared.Internal.Logging;
 using Orangebeard.SpecFlowPlugin.ClientExecution.Logging;
-using Orangebeard.SpecFlowPlugin.ClientExtensibility;
-using Orangebeard.SpecFlowPlugin.ClientExtensibility.Commands;
 using System;
 using System.Collections.Generic;
 using System.Threading;

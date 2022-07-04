@@ -1,8 +1,4 @@
-﻿//using Orangebeard.Shared.Extensibility;
-//using Orangebeard.Shared.Extensibility.Commands.CommandArgs;
-using Orangebeard.Client;
-using Orangebeard.Client.Entities;
-using Orangebeard.SpecFlowPlugin.LogHandler;
+﻿using Orangebeard.SpecFlowPlugin.LogHandler;
 using System;
 
 namespace Orangebeard.SpecFlowPlugin.ClientExecution.Logging
