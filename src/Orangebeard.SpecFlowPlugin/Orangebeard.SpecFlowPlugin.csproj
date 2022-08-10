@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net462;netstandard2.1;netcoreapp3.1</TargetFrameworks>
     <PackageId>Orangebeard.SpecFlow</PackageId>
-    <Version>1.0.0.4</Version>
+    <Version>1.0.0.5</Version>
     
     <Description>Plugin to output SpecFlow test logging into Orangebeard</Description>
     <Authors>Team Soju</Authors>
