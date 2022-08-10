@@ -80,7 +80,7 @@ namespace Orangebeard.SpecFlowPlugin
                     OrangebeardAddIn.TestrunUuid = _testRunUuid;
                     if (_testRunUuid == null)
                     {
-                        _traceLogger.Error("Test run failed to start!");
+                        _traceLogger.Error("Orangebeard Test run failed to start! Did you use the right Endpoint/UUID/Project?");
                     }
                     else
                     {
@@ -198,7 +198,7 @@ namespace Orangebeard.SpecFlowPlugin
                         if (!eventArg.Canceled)
                         {
                             Context.Current = Context.Current.Parent;
-                            _client.FinishTestItem(_testRunUuid.Value, finishTestItem);
+                            _client.FinishTestItem(currentFeature.Value, finishTestItem);
 
                             OrangebeardAddIn.OnAfterFeatureFinished(null, new TestItemFinishedEventArgs(_client, finishTestItem, currentFeature.Value, featureContext, null));
                         }
