@@ -417,7 +417,8 @@ namespace Orangebeard.SpecFlowPlugin
                         {
                             Text = formattedParameters,
                             Level = LogLevel.Info,
-                            Time = DateTime.UtcNow
+                            Time = DateTime.UtcNow,
+                            Format = LogFormat.MARKDOWN
                         });
                     }
 

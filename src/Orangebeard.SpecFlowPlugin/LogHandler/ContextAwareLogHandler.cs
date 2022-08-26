@@ -40,7 +40,7 @@ namespace Orangebeard.SpecFlowPlugin.LogHandler
 
             if (testReporter != null)
             {
-                testReporter.Log(args.LogMessage.ConvertToRequest());
+                testReporter.Log(args.LogMessage.ConvertToRequest(LogFormat.MARKDOWN));
             }
             else
             {
