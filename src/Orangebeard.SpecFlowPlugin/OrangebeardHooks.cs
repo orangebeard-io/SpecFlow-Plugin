@@ -56,7 +56,7 @@ namespace Orangebeard.SpecFlowPlugin
                 if (!eventArg.Canceled)
                 {
                     _launchReporter = _launchReporter ?? new LaunchReporter(_service, config, null, Orangebeard.Shared.Extensibility.ExtensionManager.Instance);
-                    
+
                     _launchReporter.Start(request);
 
                     OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_service, request, _launchReporter));
