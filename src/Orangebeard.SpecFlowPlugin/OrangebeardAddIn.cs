@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using Orangebeard.Client;
 using Orangebeard.Shared.Internal.Logging;
+using Orangebeard.Shared.Reporter;
 using Orangebeard.SpecFlowPlugin.EventArguments;
 using TechTalk.SpecFlow;
 
@@ -11,21 +11,18 @@ namespace Orangebeard.SpecFlowPlugin
     {
         private static readonly ITraceLogger Logger = TraceLogManager.Instance.GetLogger<OrangebeardAddIn>();
 
-        public static OrangebeardV2Client Client { get; set; }
-        public static Guid? TestrunUuid { get; set; }
-
-        private static ConcurrentDictionary<FeatureInfo, Guid> FeatureTestReporters { get; } = new ConcurrentDictionary<FeatureInfo, Guid>(new FeatureInfoEqualityComparer());
+        private static ConcurrentDictionary<FeatureInfo, ITestReporter> FeatureTestReporters { get; } = new ConcurrentDictionary<FeatureInfo, ITestReporter>(new FeatureInfoEqualityComparer());
 
         private static ConcurrentDictionary<FeatureInfo, int> FeatureThreadCount { get; } = new ConcurrentDictionary<FeatureInfo, int>(new FeatureInfoEqualityComparer());
 
-        private static ConcurrentDictionary<ScenarioInfo, Guid> ScenarioTestReporters { get; } = new ConcurrentDictionary<ScenarioInfo, Guid>();
+        private static ConcurrentDictionary<ScenarioInfo, ITestReporter> ScenarioTestReporters { get; } = new ConcurrentDictionary<ScenarioInfo, ITestReporter>();
 
-        private static ConcurrentDictionary<StepInfo, Guid> StepTestReporters { get; } = new ConcurrentDictionary<StepInfo, Guid>();
+        private static ConcurrentDictionary<StepInfo, ITestReporter> StepTestReporters { get; } = new ConcurrentDictionary<StepInfo, ITestReporter>();
 
         // key: log scope ID, value: according test reporter
-        public static ConcurrentDictionary<string, Guid> LogScopes { get; } = new ConcurrentDictionary<string, Guid>();
+        public static ConcurrentDictionary<string, ITestReporter> LogScopes { get; } = new ConcurrentDictionary<string, ITestReporter>();
 
-        public static Guid? GetFeatureTestReporter(FeatureContext context)
+        public static ITestReporter GetFeatureTestReporter(FeatureContext context)
         {
             if (context != null && FeatureTestReporters.ContainsKey(context.FeatureInfo))
             {
@@ -37,13 +34,13 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        internal static void SetFeatureTestReporter(FeatureContext context, Guid reporter)
+        internal static void SetFeatureTestReporter(FeatureContext context, ITestReporter reporter)
         {
             FeatureTestReporters[context.FeatureInfo] = reporter;
             FeatureThreadCount[context.FeatureInfo] = 1;
         }
 
-        internal static void RemoveFeatureTestReporter(FeatureContext context, Guid reporter)
+        internal static void RemoveFeatureTestReporter(FeatureContext context, ITestReporter reporter)
         {
             FeatureTestReporters.TryRemove(context.FeatureInfo, out reporter);
             FeatureThreadCount.TryRemove(context.FeatureInfo, out int count);
@@ -61,7 +58,7 @@ namespace Orangebeard.SpecFlowPlugin
                 = FeatureThreadCount.ContainsKey(context.FeatureInfo) ? FeatureThreadCount[context.FeatureInfo] - 1 : 0;
         }
 
-        public static Guid? GetScenarioTestReporter(ScenarioContext context)
+        public static ITestReporter GetScenarioTestReporter(ScenarioContext context)
         {
             if (context != null && ScenarioTestReporters.ContainsKey(context.ScenarioInfo))
             {
@@ -73,17 +70,17 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        internal static void SetScenarioTestReporter(ScenarioContext context, Guid reporter)
+        internal static void SetScenarioTestReporter(ScenarioContext context, ITestReporter reporter)
         {
             ScenarioTestReporters[context.ScenarioInfo] = reporter;
         }
 
-        internal static void RemoveScenarioTestReporter(ScenarioContext context, Guid reporter)
+        internal static void RemoveScenarioTestReporter(ScenarioContext context, ITestReporter reporter)
         {
             ScenarioTestReporters.TryRemove(context.ScenarioInfo, out reporter);
         }
 
-        public static Guid? GetStepTestReporter(ScenarioStepContext context)
+        public static ITestReporter GetStepTestReporter(ScenarioStepContext context)
         {
             if (context != null && StepTestReporters.ContainsKey(context.StepInfo))
             {
@@ -95,12 +92,12 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        internal static void SetStepTestReporter(ScenarioStepContext context, Guid reporter)
+        internal static void SetStepTestReporter(ScenarioStepContext context, ITestReporter reporter)
         {
             StepTestReporters[context.StepInfo] = reporter;
         }
 
-        internal static void RemoveStepTestReporter(ScenarioStepContext context, Guid reporter)
+        internal static void RemoveStepTestReporter(ScenarioStepContext context, ITestReporter reporter)
         {
             StepTestReporters.TryRemove(context.StepInfo, out reporter);
         }

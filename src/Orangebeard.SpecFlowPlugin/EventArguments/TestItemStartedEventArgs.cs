@@ -1,5 +1,6 @@
-﻿using Orangebeard.Client;
-using Orangebeard.Client.Entities;
+﻿using Orangebeard.Client.Abstractions;
+using Orangebeard.Client.Abstractions.Requests;
+using Orangebeard.Shared.Reporter;
 using System;
 using TechTalk.SpecFlow;
 
@@ -7,30 +8,30 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class TestItemStartedEventArgs : EventArgs
     {
-        public TestItemStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem)
+        public TestItemStartedEventArgs(IClientService service, StartTestItemRequest request)
         {
-            Client = client;
-            StartTestItemRequest = startTestItem;
+            Service = service;
+            StartTestItemRequest = request;
         }
 
-        public TestItemStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem, Guid? testUuid)
-            : this(client, startTestItem)
+        public TestItemStartedEventArgs(IClientService service, StartTestItemRequest request, ITestReporter testReporter)
+            : this(service, request)
         {
-            TestUuid = testUuid;
+            TestReporter = testReporter;
         }
 
-        public TestItemStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem, Guid? testUuid, FeatureContext featureContext, ScenarioContext scenarioContext)
-            : this(client, startTestItem, testUuid)
+        public TestItemStartedEventArgs(IClientService service, StartTestItemRequest request, ITestReporter testReporter, FeatureContext featureContext, ScenarioContext scenarioContext)
+            : this(service, request, testReporter)
         {
             this.FeatureContext = featureContext;
             this.ScenarioContext = scenarioContext;
         }
 
-        public OrangebeardV2Client Client { get; }
+        public IClientService Service { get; }
 
-        public StartTestItem StartTestItemRequest { get; }
+        public StartTestItemRequest StartTestItemRequest { get; }
 
-        public Guid? TestUuid { get; }
+        public ITestReporter TestReporter { get; }
 
         public FeatureContext FeatureContext { get; }
 

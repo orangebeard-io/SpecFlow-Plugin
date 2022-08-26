@@ -1,5 +1,6 @@
-﻿using Orangebeard.Client;
-using Orangebeard.Client.Entities;
+﻿using Orangebeard.Client.Abstractions;
+using Orangebeard.Client.Abstractions.Requests;
+using Orangebeard.Shared.Reporter;
 using System;
 using TechTalk.SpecFlow;
 
@@ -7,19 +8,19 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class StepStartedEventArgs : EventArgs
     {
-        public StepStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem)
+        public StepStartedEventArgs(IClientService service, StartTestItemRequest request)
         {
-            Client = client;
-            StartTestItemObject = startTestItem;
+            Service = service;
+            StarTestItemRequest = request;
         }
 
-        public StepStartedEventArgs(OrangebeardV2Client client, StartTestItem startTestItem, Guid testUuid)
-            : this(client, startTestItem)
+        public StepStartedEventArgs(IClientService service, StartTestItemRequest request, ITestReporter testReporter)
+            : this(service, request)
         {
-            TestUuid = testUuid;
+            TestReporter = testReporter;
         }
 
-        public StepStartedEventArgs(OrangebeardV2Client service, StartTestItem request, Guid testReporter, FeatureContext featureContext, ScenarioContext scenarioContext, ScenarioStepContext stepContext)
+        public StepStartedEventArgs(IClientService service, StartTestItemRequest request, ITestReporter testReporter, FeatureContext featureContext, ScenarioContext scenarioContext, ScenarioStepContext stepContext)
             : this(service, request, testReporter)
         {
             FeatureContext = featureContext;
@@ -27,11 +28,11 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
             StepContext = stepContext;
         }
 
-        public OrangebeardV2Client Client { get; }
+        public IClientService Service { get; }
 
-        public StartTestItem StartTestItemObject { get; }
+        public StartTestItemRequest StarTestItemRequest { get; }
 
-        public Guid TestUuid { get; }
+        public ITestReporter TestReporter { get; }
 
         public FeatureContext FeatureContext { get; }
 
