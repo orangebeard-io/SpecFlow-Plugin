@@ -31,9 +31,11 @@ namespace Orangebeard.SpecFlowPlugin
         [BeforeTestRun(Order = -20000)]
         public static void BeforeTestRun()
         {
+            
             try
-            {
+            { 
                 var config = Initialize();
+
 
                 var request = new StartLaunchRequest
                 {
@@ -71,10 +73,7 @@ namespace Orangebeard.SpecFlowPlugin
 
         private static IConfiguration Initialize()
         {
-           // IConfigurationBuilder _configBuilder new ConfigurationBuilder().AddJsonFile(jsonPath).AddEnvironmentVariables();
-           // IConfiguration _configuration;
-           // OrangebeardConfiguration _config;
-           // OrangebeardClient _orangebeard;
+
 
             var args = new InitializingEventArgs(Plugin.Config);
 
@@ -121,7 +120,7 @@ namespace Orangebeard.SpecFlowPlugin
 
                         var sw = Stopwatch.StartNew();
 
-                        _traceLogger.Info($"Finishing Oramngebeard Run...");
+                        _traceLogger.Info($"Finishing Orangebeard Run...");
                         _launchReporter.Sync();
                         _traceLogger.Info($"Elapsed: {sw.Elapsed}");
 
@@ -225,11 +224,15 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
+       
+
         [BeforeScenario(Order = -20000)]
         public void BeforeScenario()
         {
+    
             try
             {
+                
                 ContextAwareLogHandler.ActiveScenarioContext = this.ScenarioContext;
 
                 var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(this.FeatureContext);
@@ -241,7 +244,7 @@ namespace Orangebeard.SpecFlowPlugin
                         Name = this.ScenarioContext.ScenarioInfo.Title,
                         Description = this.ScenarioContext.ScenarioInfo.Description,
                         StartTime = DateTime.UtcNow,
-                        Type = TestItemType.Step,
+                        Type = TestItemType.Test,
                         Attributes = this.ScenarioContext.ScenarioInfo.Tags?.Select(tag => new ItemAttribute { Value = tag }).ToList()
                     };
 
@@ -250,6 +253,7 @@ namespace Orangebeard.SpecFlowPlugin
                     if (arguments != null && arguments.Count > 0)
                     {
                         request.Parameters = new List<KeyValuePair<string, string>>();
+                        var testNameWithParams = new StringBuilder(this.ScenarioContext.ScenarioInfo.Title);
 
                         foreach (DictionaryEntry argument in arguments)
                         {
@@ -259,6 +263,12 @@ namespace Orangebeard.SpecFlowPlugin
                                 argument.Value.ToString()
                             ));
                         }
+                        // append args to test
+                        testNameWithParams.Append(" (");
+                        testNameWithParams.Append(string.Join(", ", request.Parameters.Select(kv => kv.Value)));
+                        testNameWithParams.Append(")");
+
+                        request.Name = testNameWithParams.ToString();
 
                         // append scenario outline parameters to description
                         var parametersInfo = new StringBuilder();
@@ -326,25 +336,9 @@ namespace Orangebeard.SpecFlowPlugin
 
                 if (currentScenario != null)
                 {
-                    if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.TestError)
-                    {
-                        currentScenario.Log(new CreateLogItemRequest
-                        {
-                            Level = LogLevel.Error,
-                            Time = DateTime.UtcNow,
-                            Text = this.ScenarioContext.TestError?.ToString()
-                        });
-                    }
-                    else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.BindingError)
-                    {
-                        currentScenario.Log(new CreateLogItemRequest
-                        {
-                            Level = LogLevel.Error,
-                            Time = DateTime.UtcNow,
-                            Text = this.ScenarioContext.TestError?.Message
-                        });
-                    }
-                    else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep)
+
+                    
+                    if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep)
                     {
                         currentScenario.Log(new CreateLogItemRequest
                         {
@@ -354,7 +348,10 @@ namespace Orangebeard.SpecFlowPlugin
                         });
                     }
 
-                    var status = this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.OK ? Status.Passed : Status.Failed;
+                    var status = this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.OK ? Status.Passed 
+                        : this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.Skipped || 
+                            this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep ? Status.Skipped
+                            : Status.Failed;
 
                     var request = new FinishTestItemRequest
                     {
@@ -398,6 +395,7 @@ namespace Orangebeard.SpecFlowPlugin
                 {
                     Name = this.StepContext.StepInfo.GetCaption(),
                     StartTime = DateTime.UtcNow,
+                    Type = TestItemType.Step,
                     HasStats = false
                 };
 
@@ -438,6 +436,25 @@ namespace Orangebeard.SpecFlowPlugin
             {
                 var currentStep = OrangebeardAddIn.GetStepTestReporter(this.StepContext);
 
+                if (this.StepContext.Status == ScenarioExecutionStatus.TestError)
+                {
+                    currentStep.Log(new CreateLogItemRequest
+                    {
+                        Level = LogLevel.Error,
+                        Time = DateTime.UtcNow,
+                        Text = this.ScenarioContext.TestError?.ToString()
+                    });
+                }
+                else if (this.StepContext.Status == ScenarioExecutionStatus.BindingError)
+                {
+                    currentStep.Log(new CreateLogItemRequest
+                    {
+                        Level = LogLevel.Error,
+                        Time = DateTime.UtcNow,
+                        Text = this.ScenarioContext.TestError?.Message
+                    });
+                }              
+
                 var stepFinishRequest = new FinishTestItemRequest
                 {
                     EndTime = DateTime.UtcNow
@@ -446,6 +463,10 @@ namespace Orangebeard.SpecFlowPlugin
                 if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.TestError)
                 {
                     stepFinishRequest.Status = Status.Failed;
+                } 
+                else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.Skipped)
+                {
+                    stepFinishRequest.Status = Status.Skipped;
                 }
 
                 var eventArg = new StepFinishedEventArgs(_service, stepFinishRequest, currentStep, this.FeatureContext, this.ScenarioContext, this.StepContext);
