@@ -36,11 +36,13 @@ namespace Orangebeard.SpecFlowPlugin
                 {
                     e.SpecFlowConfiguration.AdditionalStepAssemblies.Add("Orangebeard.SpecFlowPlugin");
                     e.ObjectContainer.RegisterTypeAs<SafeBindingInvoker, IBindingInvoker>();
+                    e.ObjectContainer.RegisterTypeAs<OrangebeardOutputHelper, ISpecFlowOutputHelper>();
                 };
 
                 runtimePluginEvents.CustomizeScenarioDependencies += (sender, e) =>
                 {
                     e.ObjectContainer.RegisterTypeAs<SkippedStepsHandler, ISkippedStepHandler>();
+                    e.ObjectContainer.RegisterTypeAs<OrangebeardOutputHelper, ISpecFlowOutputHelper>();
                 };
             }
         }
