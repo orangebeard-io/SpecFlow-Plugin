@@ -47,7 +47,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Orangebeard.Client" Version="2.1.1" />
+    <PackageReference Include="Orangebeard.Client" Version="2.1.5" />
     <PackageReference Include="SpecFlow" Version="3.9.74" />
   </ItemGroup>
 
