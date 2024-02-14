@@ -1,5 +1,5 @@
-﻿using Orangebeard.Client.Abstractions;
-using Orangebeard.Shared.Configuration;
+﻿using Orangebeard.Client.V3;
+using Orangebeard.Client.V3.OrangebeardConfig;
 
 namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
@@ -12,6 +12,6 @@ namespace Orangebeard.SpecFlowPlugin.EventArguments
 
         public IConfiguration Config { get; set; }
 
-        public IClientService Service { get; set; }
+        public OrangebeardAsyncV3Client OrangebeardClient { get; set; }
     }
 }

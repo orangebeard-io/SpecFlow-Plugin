@@ -12,9 +12,9 @@ namespace Orangebeard.SpecFlowPlugin
         {
             lock (GetLockLock)
             {
-                if (Repository.ContainsKey(hashCode))
+                if (Repository.TryGetValue(hashCode, out var @lock))
                 {
-                    return Repository[hashCode];
+                    return @lock;
                 }
 
                 var lockObj = new object();

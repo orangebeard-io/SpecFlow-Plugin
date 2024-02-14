@@ -1,29 +1,20 @@
 ﻿using System;
-using Orangebeard.Client.Abstractions;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Reporter;
+using Orangebeard.Client.V3;
+using Orangebeard.Client.V3.Entity.TestRun;
 
 namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class RunStartedEventArgs : EventArgs
     {
-        public RunStartedEventArgs(IClientService service, StartLaunchRequest request)
+        public RunStartedEventArgs(OrangebeardAsyncV3Client client, StartTestRun request)
         {
-            Service = service;
-            StartLaunchRequest = request;
+            Client = client;
+            StartTestRunRequest = request;
         }
+        
+        public OrangebeardAsyncV3Client Client { get; }
 
-        public RunStartedEventArgs(IClientService service, StartLaunchRequest request, ILaunchReporter launchReporter)
-            : this(service, request)
-        {
-            LaunchReporter = launchReporter;
-        }
-
-        public IClientService Service { get; }
-
-        public StartLaunchRequest StartLaunchRequest { get; }
-
-        public ILaunchReporter LaunchReporter { get; set; }
+        public StartTestRun StartTestRunRequest { get; }
 
         public bool Canceled { get; set; }
     }

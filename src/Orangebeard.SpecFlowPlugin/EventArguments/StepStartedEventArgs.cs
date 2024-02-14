@@ -1,45 +1,19 @@
-﻿using Orangebeard.Client.Abstractions;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Reporter;
-using System;
-using TechTalk.SpecFlow;
+﻿using System;
+using Orangebeard.Client.V3;
+using Orangebeard.Client.V3.Entity.Step;
 
 namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class StepStartedEventArgs : EventArgs
     {
-        public StepStartedEventArgs(IClientService service, StartTestItemRequest request)
+        public StepStartedEventArgs(OrangebeardAsyncV3Client client, StartStep request)
         {
-            Service = service;
-            StarTestItemRequest = request;
+            Client = client;
+            StartStepRequest = request;
         }
-
-        public StepStartedEventArgs(IClientService service, StartTestItemRequest request, ITestReporter testReporter)
-            : this(service, request)
-        {
-            TestReporter = testReporter;
-        }
-
-        public StepStartedEventArgs(IClientService service, StartTestItemRequest request, ITestReporter testReporter, FeatureContext featureContext, ScenarioContext scenarioContext, ScenarioStepContext stepContext)
-            : this(service, request, testReporter)
-        {
-            FeatureContext = featureContext;
-            ScenarioContext = scenarioContext;
-            StepContext = stepContext;
-        }
-
-        public IClientService Service { get; }
-
-        public StartTestItemRequest StarTestItemRequest { get; }
-
-        public ITestReporter TestReporter { get; }
-
-        public FeatureContext FeatureContext { get; }
-
-        public ScenarioContext ScenarioContext { get; }
-
-        public ScenarioStepContext StepContext { get; }
-
+        
+        public OrangebeardAsyncV3Client Client { get; }
+        public StartStep StartStepRequest { get; }
         public bool Canceled { get; set;}
     }
 }

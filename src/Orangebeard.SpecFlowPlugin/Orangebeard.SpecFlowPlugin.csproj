@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard2.1;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netcoreapp3.1;netstandard2.1;net6.0;net8.0;net47;net48</TargetFrameworks>
     <PackageId>Orangebeard.SpecFlow</PackageId>
-    <Version>1.1.1.0</Version>
+    <Version>1.1.1.1</Version>
     
     <Description>Plugin to output SpecFlow test logging into Orangebeard</Description>
     <Authors>Team Soju</Authors>
@@ -47,7 +47,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Orangebeard.Client" Version="2.1.5" />
+    <PackageReference Include="Orangebeard.Client" Version="3.0.1" />
     <PackageReference Include="SpecFlow" Version="3.9.74" />
   </ItemGroup>
 

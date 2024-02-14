@@ -1,12 +1,10 @@
-﻿using Orangebeard.Client.Abstractions.Models;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Reporter;
-using Orangebeard.SpecFlowPlugin.Attachment;
-using Orangebeard.SpecFlowPlugin.LogHandler;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using Orangebeard.Client.V3.Entity;
+using Orangebeard.Client.V3.Entity.Attachment;
+using Orangebeard.Client.V3.Entity.Log;
+using Orangebeard.Client.V3.MimeTypes;
 using TechTalk.SpecFlow.Events;
 using TechTalk.SpecFlow.Infrastructure;
 using TechTalk.SpecFlow.Tracing;
@@ -17,11 +15,13 @@ namespace Orangebeard.SpecFlowPlugin
     {
         private readonly SpecFlowOutputHelper _baseHelper;
 
-        private const string FILE_PATH_PATTERN = @"((((?<!\w)[A-Z,a-z]:)|(\.{0,2}\\))([^\b%\/\|:\n<>""']*))";
+        private const string FilePathPattern = @"((((?<!\w)[A-Z,a-z]:)|(\.{0,2}\\))([^\b%\/\|:\n<>""']*))";
 
-        public OrangebeardOutputHelper(ITestThreadExecutionEventPublisher testThreadExecutionEventPublisher, ITraceListener traceListener, ISpecFlowAttachmentHandler specFlowAttachmentHandler)
+        public OrangebeardOutputHelper(ITestThreadExecutionEventPublisher testThreadExecutionEventPublisher,
+            ITraceListener traceListener, ISpecFlowAttachmentHandler reqnrollAttachmentHandler)
         {
-            _baseHelper = new SpecFlowOutputHelper(testThreadExecutionEventPublisher, traceListener, specFlowAttachmentHandler);   
+            _baseHelper = new SpecFlowOutputHelper(testThreadExecutionEventPublisher, traceListener,
+                reqnrollAttachmentHandler);
         }
 
         public void AddAttachment(string filePath)
@@ -42,81 +42,90 @@ namespace Orangebeard.SpecFlowPlugin
             _baseHelper.WriteLine(format, args);
         }
 
-        private void SendLog(string message)
+        private static void SendLog(string message)
         {
-            Match match = Regex.Match(message, FILE_PATH_PATTERN);
+            var match = Regex.Match(message, FilePathPattern);
             if (match.Success) //Look only at first match, as we support max 1 attachment per log entry
             {
-                string filePath = match.Value;
+                var filePath = match.Value;
                 if (!Path.IsPathRooted(filePath))
                 {
                     filePath = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar + filePath;
                 }
-                SendAttachment(GetAttachmentFileFromPath(filePath), message);               
+
+                SendAttachment(GetAttachmentFileFromPath(filePath), message);
             }
             else
             {
-                SendLog(message, LogLevel.Info);
-            }             
+                SendLog(message, LogLevel.INFO);
+            }
         }
 
-        private void SendLog(string message, LogLevel level)
+        private static Guid SendLog(string message, LogLevel level)
         {
-            GetCurrentReporter().Log(new CreateLogItemRequest
+            var context = OrangebeardAddIn.GetCurrentContext();
+
+            var log = new Log
             {
-                Level = level,
-                Text = message,
-                Format = LogFormat.MARKDOWN,
-                Time = DateTime.UtcNow
+                TestRunUUID = context.testrun,
+                TestUUID = context.test,
+                Message = message,
+                LogLevel = level,
+                LogTime = DateTime.UtcNow,
+                LogFormat = LogFormat.MARKDOWN
+            };
+
+            if (context.step.HasValue)
+            {
+                log.StepUUID = context.step.Value;
+            }
+
+            return OrangebeardHooks.GetClient().Log(log);
+        }
+
+        private static void SendAttachment(AttachmentFile attachment, string message)
+        {
+            var context = OrangebeardAddIn.GetCurrentContext();
+            if (attachment == null) return;
+
+            var logItem = SendLog(message, LogLevel.INFO);
+
+            var attachmentMeta = new AttachmentMetaData
+            {
+                TestRunUUID = context.testrun,
+                TestUUID = context.test,
+                AttachmentTime = DateTime.UtcNow,
+                LogUUID = logItem
+            };
+
+            if (context.step.HasValue)
+            {
+                attachmentMeta.StepUUID = context.step.Value;
+            }
+
+            OrangebeardHooks.GetClient().SendAttachment(new Attachment
+            {
+                File = attachment,
+                MetaData = attachmentMeta
             });
         }
 
-        private void SendAttachment(SpecFlowAttachmentFile attachment, string logMessage)
-        {
-            if (attachment != null)
-            {
-                GetCurrentReporter().Log(new CreateLogItemRequest
-                {
-                    Time = DateTime.UtcNow,
-                    Level = LogLevel.Info,
-                    Text = logMessage ?? "[Attachment]: " + attachment.FileName,
-                    Format = LogFormat.PLAIN_TEXT,
-                    Attach = new LogItemAttach(attachment.MimeType, attachment.Data) { Name = attachment.FileName }
-                });
-            }
-        }
-
-        private SpecFlowAttachmentFile GetAttachmentFileFromPath(string filePath)
+        private static AttachmentFile GetAttachmentFileFromPath(string filePath)
         {
             try
             {
-                return new SpecFlowAttachmentFile(
-                    Orangebeard.Shared.MimeTypes.MimeTypeMap.GetMimeType(Path.GetExtension(filePath)),
-                    Path.GetFileName(filePath),
-                    File.ReadAllBytes(filePath));            
-            } catch (Exception e)
+                return new AttachmentFile
+                {
+                    ContentType = MimeTypeMap.GetMimeType(Path.GetExtension(filePath)),
+                    Name = Path.GetFileName(filePath),
+                    Content = File.ReadAllBytes(filePath)
+                };
+            }
+            catch (Exception e)
             {
-                SendLog($"\r\nFailed to attach {filePath} ({e.Message})", LogLevel.Warning);
+                SendLog($"\r\nFailed to attach {filePath} ({e.Message})", LogLevel.WARN);
                 return null;
             }
         }
-
-        private ITestReporter GetCurrentReporter()
-        {
-            var reporter = OrangebeardAddIn.GetStepTestReporter(ContextAwareLogHandler.ActiveStepContext);
-
-            if (reporter == null)
-            {
-                reporter = OrangebeardAddIn.GetScenarioTestReporter(ContextAwareLogHandler.ActiveScenarioContext);
-            }
-
-            if (reporter == null)
-            {
-                reporter = OrangebeardAddIn.GetFeatureTestReporter(ContextAwareLogHandler.ActiveFeatureContext);
-            }
-          
-            return reporter;
-        }
-
     }
 }
