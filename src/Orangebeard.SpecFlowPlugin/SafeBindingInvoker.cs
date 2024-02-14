@@ -17,8 +17,7 @@ namespace Orangebeard.SpecFlowPlugin
             : base(reqnrollConfiguration, errorProvider, synchronousBindingDelegateInvoker)
         {
         }
-
-        [Obsolete("Use async version of the method instead")]
+        
         public override object InvokeBinding(IBinding binding, IContextManager contextManager, object[] arguments,
             ITestTracer testTracer, out TimeSpan duration)
         {

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>netcoreapp3.1;netstandard2.1;net6.0;net8.0;net47;net48</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;net47</TargetFrameworks>
     <PackageId>Orangebeard.SpecFlow</PackageId>
     <Version>2.0.0</Version>
     
@@ -11,7 +11,7 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIcon>beard.png</PackageIcon>
     <PackageProjectUrl>https://orangebeard.io</PackageProjectUrl>
-
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryType>GitHub</RepositoryType>
     <RepositoryUrl>https://github.com/orangebeard-io/SpecFlow-Plugin</RepositoryUrl>
 
@@ -52,8 +52,8 @@
   </ItemGroup>
 
   <ItemGroup>
-
     <None Include="..\..\beard.png" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>
