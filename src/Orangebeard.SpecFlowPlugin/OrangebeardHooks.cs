@@ -1,100 +1,89 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using Orangebeard.Client;
-using Orangebeard.Client.Abstractions;
-using Orangebeard.Client.Abstractions.Models;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Client.OrangebeardProperties;
-using Orangebeard.Shared.Configuration;
-using Orangebeard.Shared.Internal.Logging;
-using Orangebeard.Shared.Reporter;
+using Orangebeard.Client.V3;
+using Orangebeard.Client.V3.ClientUtils.Logging;
+using Orangebeard.Client.V3.Entity;
+using Orangebeard.Client.V3.Entity.Log;
+using Orangebeard.Client.V3.Entity.Step;
+using Orangebeard.Client.V3.Entity.Suite;
+using Orangebeard.Client.V3.Entity.Test;
+using Orangebeard.Client.V3.Entity.TestRun;
+using Orangebeard.Client.V3.OrangebeardConfig;
 using Orangebeard.SpecFlowPlugin.EventArguments;
 using Orangebeard.SpecFlowPlugin.Extensions;
 using Orangebeard.SpecFlowPlugin.LogHandler;
+using Orangebeard.SpecFlowPlugin.Util;
 using TechTalk.SpecFlow;
+using Attribute = Orangebeard.Client.V3.Entity.Attribute;
 
 namespace Orangebeard.SpecFlowPlugin
 {
     [Binding]
     internal class OrangebeardHooks : Steps
     {
-        private static readonly ITraceLogger _traceLogger = TraceLogManager.Instance.GetLogger<OrangebeardHooks>();
+        private static readonly ILogger Logger = LogManager.Instance.GetLogger<OrangebeardHooks>();
 
-        private static IClientService _service;
-        private static ILaunchReporter _launchReporter;
+        private static OrangebeardAsyncV3Client _client;
+        private static Guid _testrunGuid;
+
+        internal static OrangebeardAsyncV3Client GetClient()
+        {
+            return _client;
+        }
+        
+        internal static Guid GetTestRunGuid()
+        {
+            return _testrunGuid;
+        }
 
         [BeforeTestRun(Order = -20000)]
         public static void BeforeTestRun()
         {
-            
             try
-            { 
+            {
                 var config = Initialize();
 
-
-                var request = new StartLaunchRequest
+                var startTestRun = new StartTestRun()
                 {
-                    Name = config.GetValue(ConfigurationPath.TestSetName, "SpecFlow Launch"),
-                    StartTime = DateTime.UtcNow
+                    TestSetName = config.GetValue(ConfigurationPath.TestSetName, "Reqnroll Test Run"),
+                    StartTime = DateTime.UtcNow,
+                    Attributes = new HashSet<Attribute>(new HashSet<KeyValuePair<string, string>>(
+                            config.GetKeyValues("TestSet:Attributes", new HashSet<KeyValuePair<string, string>>()))
+                        .Select(a => new Attribute() { Key = a.Key, Value = a.Value }).ToList()),
+                    Description = config.GetValue(ConfigurationPath.TestSetDescription, string.Empty)
                 };
-               
 
-                request.Attributes = config.GetKeyValues("TestSet:Attributes", new List<KeyValuePair<string, string>>()).Select(a => new ItemAttribute { Key = a.Key, Value = a.Value }).ToList();
-                request.Description = config.GetValue(ConfigurationPath.TestSetDescription, string.Empty);
 
-                var eventArg = new RunStartedEventArgs(_service, request);
+                var eventArg = new RunStartedEventArgs(_client, startTestRun);
                 OrangebeardAddIn.OnBeforeRunStarted(null, eventArg);
 
-                if (eventArg.LaunchReporter != null)
-                {
-                    _launchReporter = eventArg.LaunchReporter;
-                }
-
-                if (!eventArg.Canceled)
-                {
-                    _launchReporter = _launchReporter ?? new LaunchReporter(_service, config, null, Orangebeard.Shared.Extensibility.ExtensionManager.Instance);
-
-                    _launchReporter.Start(request);
-
-                    OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_service, request, _launchReporter));
-
-                }
+                if (eventArg.Canceled) return;
+                _testrunGuid = _client.StartTestRun(startTestRun);
+                OrangebeardAddIn.OnAfterRunStarted(null, new RunStartedEventArgs(_client, startTestRun));
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
         }
 
         private static IConfiguration Initialize()
         {
-
-
             var args = new InitializingEventArgs(Plugin.Config);
 
             OrangebeardAddIn.OnInitializing(typeof(OrangebeardHooks), args);
 
-            var uri = Plugin.Config.GetValue<string>(ConfigurationPath.ServerUrl);
-            var project = Plugin.Config.GetValue<string>(ConfigurationPath.ServerProject); ;
-            var uuid = Plugin.Config.GetValue<string>(ConfigurationPath.ServerAuthenticationUuid); ;
+            var orangebeardConfig = new OrangebeardConfiguration(Plugin.Config).WithListenerIdentification(
+                "Reqnroll Plugin/" +
+                typeof(OrangebeardHooks).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+                    .InformationalVersion
+            );
+            _client = new OrangebeardAsyncV3Client(orangebeardConfig);
 
-            if (args.Service != null)
-            {
-                _service = args.Service as OrangebeardClient;
-            }
-            else
-            {
-                var orangebeardConfig = new OrangebeardConfiguration(Plugin.Config).WithListenerIdentification(
-                            "SpecFlow Plugin/" +
-                            typeof(OrangebeardHooks).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion
-                            );
-                _service = new OrangebeardClient(orangebeardConfig);
-            }
 
             return args.Config;
         }
@@ -104,33 +93,20 @@ namespace Orangebeard.SpecFlowPlugin
         {
             try
             {
-                if (_launchReporter != null)
-                {
-                    var request = new FinishLaunchRequest
-                    {
-                        EndTime = DateTime.UtcNow
-                    };
+                var finishTestRun = new FinishTestRun();
 
-                    var eventArg = new RunFinishedEventArgs(_service, request, _launchReporter);
-                    OrangebeardAddIn.OnBeforeRunFinished(null, eventArg);
+                var eventArg = new RunFinishedEventArgs(_client, finishTestRun);
+                OrangebeardAddIn.OnBeforeRunFinished(null, eventArg);
 
-                    if (!eventArg.Canceled)
-                    {
-                        _launchReporter.Finish(request);
+                if (eventArg.Canceled) return;
 
-                        var sw = Stopwatch.StartNew();
-
-                        _traceLogger.Info($"Finishing Orangebeard Run...");
-                        _launchReporter.Sync();
-                        _traceLogger.Info($"Elapsed: {sw.Elapsed}");
-
-                        OrangebeardAddIn.OnAfterRunFinished(null, new RunFinishedEventArgs(_service, request, _launchReporter));
-                    }
-                }
+                _client.FinishTestRun(_testrunGuid, finishTestRun);
+                OrangebeardAddIn.OnAfterRunFinished(null,
+                    new RunFinishedEventArgs(_client, finishTestRun));
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
         }
 
@@ -139,46 +115,44 @@ namespace Orangebeard.SpecFlowPlugin
         {
             try
             {
-                if (_launchReporter != null)
+                ContextHandler.ActiveFeatureContext = featureContext;
+
+                lock (LockHelper.GetLock(
+                          FeatureInfoEqualityComparer.GetFeatureInfoHashCode(featureContext.FeatureInfo)))
                 {
-                    ContextAwareLogHandler.ActiveFeatureContext = featureContext;
+                    var currentFeature = OrangebeardAddIn.GetCurrentFeatureGuid(featureContext);
 
-                    lock (LockHelper.GetLock(FeatureInfoEqualityComparer.GetFeatureInfoHashCode(featureContext.FeatureInfo)))
+                    if (currentFeature == null)
                     {
-                        var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(featureContext);
-
-                        if (currentFeature == null || currentFeature.FinishTask != null)
+                        var startSuite = new StartSuite()
                         {
-                            var request = new StartTestItemRequest
-                            {
-                                Name = featureContext.FeatureInfo.Title,
-                                Description = featureContext.FeatureInfo.Description,
-                                StartTime = DateTime.UtcNow,
-                                Type = TestItemType.Suite,
-                                Attributes = featureContext.FeatureInfo.Tags?.Select(t => new ItemAttribute { Value = t }).ToList()
-                            };
+                            TestRunUUID = _testrunGuid,
+                            Description = featureContext.FeatureInfo.Description,
+                            Attributes = new HashSet<Attribute>(featureContext.FeatureInfo.Tags
+                                ?.Select(t => new Attribute() { Value = t }) ?? new HashSet<Attribute>()),
+                            SuiteNames = new[] { featureContext.FeatureInfo.Title },
+                        };
 
-                            var eventArg = new TestItemStartedEventArgs(_service, request, null, featureContext, null);
-                            OrangebeardAddIn.OnBeforeFeatureStarted(null, eventArg);
+                        var eventArg = new SuiteStartedEventArgs(_client, startSuite);
+                        OrangebeardAddIn.OnBeforeFeatureStarted(null, eventArg);
 
-                            if (!eventArg.Canceled)
-                            {
-                                currentFeature = _launchReporter.StartChildTestReporter(request);
-                                OrangebeardAddIn.SetFeatureTestReporter(featureContext, currentFeature);
+                        if (eventArg.Canceled) return;
 
-                                OrangebeardAddIn.OnAfterFeatureStarted(null, new TestItemStartedEventArgs(_service, request, currentFeature, featureContext, null));
-                            }
-                        }
-                        else
-                        {
-                            OrangebeardAddIn.IncrementFeatureThreadCount(featureContext);
-                        }
+                        currentFeature = _client.StartSuite(startSuite)[0];
+                        OrangebeardAddIn.SetFeatureGuid(featureContext, currentFeature.Value);
+
+                        OrangebeardAddIn.OnAfterFeatureStarted(null,
+                            new SuiteStartedEventArgs(_client, startSuite));
+                    }
+                    else
+                    {
+                        OrangebeardAddIn.IncrementFeatureThreadCount(featureContext);
                     }
                 }
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
         }
 
@@ -187,143 +161,120 @@ namespace Orangebeard.SpecFlowPlugin
         {
             try
             {
-                lock (LockHelper.GetLock(FeatureInfoEqualityComparer.GetFeatureInfoHashCode(featureContext.FeatureInfo)))
+                lock (LockHelper.GetLock(
+                          FeatureInfoEqualityComparer.GetFeatureInfoHashCode(featureContext.FeatureInfo)))
                 {
-                    var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(featureContext);
-                    var remainingThreadCount = OrangebeardAddIn.DecrementFeatureThreadCount(featureContext);
-
-                    if (currentFeature != null && currentFeature.FinishTask == null && remainingThreadCount == 0)
-                    {
-                        var request = new FinishTestItemRequest
-                        {
-                            EndTime = DateTime.UtcNow,
-                            Status = Status.Skipped
-                        };
-
-                        var eventArg = new TestItemFinishedEventArgs(_service, request, currentFeature, featureContext, null);
-                        OrangebeardAddIn.OnBeforeFeatureFinished(null, eventArg);
-
-                        if (!eventArg.Canceled)
-                        {
-                            currentFeature.Finish(request);
-
-                            OrangebeardAddIn.OnAfterFeatureFinished(null, new TestItemFinishedEventArgs(_service, request, currentFeature, featureContext, null));
-                        }
-
-                        OrangebeardAddIn.RemoveFeatureTestReporter(featureContext, currentFeature);
-                    }
+                    var currentFeature = OrangebeardAddIn.GetCurrentFeatureGuid(featureContext);
+                    OrangebeardAddIn.RemoveFeatureGuid(featureContext, currentFeature.Value);
                 }
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
+
             finally
             {
-                ContextAwareLogHandler.ActiveFeatureContext = null;
+                ContextHandler.ActiveFeatureContext = null;
             }
         }
 
-       
 
         [BeforeScenario(Order = -20000)]
         public void BeforeScenario()
         {
-    
             try
             {
-                
-                ContextAwareLogHandler.ActiveScenarioContext = this.ScenarioContext;
+                ContextHandler.ActiveScenarioContext = this.ScenarioContext;
 
-                var currentFeature = OrangebeardAddIn.GetFeatureTestReporter(this.FeatureContext);
+                var currentFeature = OrangebeardAddIn.GetCurrentFeatureGuid(this.FeatureContext);
 
-                if (currentFeature != null)
+                if (currentFeature == null) return;
+
+                var startTest = new StartTest()
                 {
-                    var request = new StartTestItemRequest
+                    TestRunUUID = _testrunGuid,
+                    SuiteUUID = currentFeature.Value,
+                    TestName = this.ScenarioContext.ScenarioInfo.Title,
+                    Description = this.ScenarioContext.ScenarioInfo.Description,
+                    TestType = TestType.TEST,
+                    StartTime = DateTime.UtcNow,
+                    Attributes = new HashSet<Attribute>(this.ScenarioContext.ScenarioInfo.Tags
+                        ?.Select(tag => new Attribute { Value = tag }) ?? new HashSet<Attribute>())
+                };
+
+                // fetch scenario parameters (from Examples block)
+                var arguments = this.ScenarioContext.ScenarioInfo.Arguments;
+                if (arguments != null && arguments.Count > 0)
+                {
+                    var testNameWithParams = new StringBuilder(ScenarioContext.ScenarioInfo.Title);
+
+                    var parameters = (
+                            from DictionaryEntry argument in arguments
+                            select new KeyValuePair<string, string>(argument.Key.ToString(), argument.Value.ToString()))
+                        .ToList();
+
+                    // append args to test name
+                    testNameWithParams.Append(" (");
+                    testNameWithParams.Append(string.Join(", ", parameters.Select(kv => kv.Value)));
+                    testNameWithParams.Append(")");
+
+                    startTest.TestName = testNameWithParams.ToString();
+
+                    // append scenario outline parameters to description
+                    var parametersInfo = new StringBuilder();
+                    parametersInfo.Append("|");
+                    foreach (var p in parameters)
                     {
-                        Name = this.ScenarioContext.ScenarioInfo.Title,
-                        Description = this.ScenarioContext.ScenarioInfo.Description,
-                        StartTime = DateTime.UtcNow,
-                        Type = TestItemType.Test,
-                        Attributes = this.ScenarioContext.ScenarioInfo.Tags?.Select(tag => new ItemAttribute { Value = tag }).ToList()
-                    };
+                        parametersInfo.Append(p.Key);
 
-                    // fetch scenario parameters (from Examples block)
-                    var arguments = this.ScenarioContext.ScenarioInfo.Arguments;
-                    if (arguments != null && arguments.Count > 0)
-                    {
-                        request.Parameters = new List<KeyValuePair<string, string>>();
-                        var testNameWithParams = new StringBuilder(this.ScenarioContext.ScenarioInfo.Title);
-
-                        foreach (DictionaryEntry argument in arguments)
-                        {
-                            request.Parameters.Add(new KeyValuePair<string, string>
-                            (
-                                argument.Key.ToString(),
-                                argument.Value.ToString()
-                            ));
-                        }
-                        // append args to test
-                        testNameWithParams.Append(" (");
-                        testNameWithParams.Append(string.Join(", ", request.Parameters.Select(kv => kv.Value)));
-                        testNameWithParams.Append(")");
-
-                        request.Name = testNameWithParams.ToString();
-
-                        // append scenario outline parameters to description
-                        var parametersInfo = new StringBuilder();
                         parametersInfo.Append("|");
-                        foreach (var p in request.Parameters)
-                        {
-                            parametersInfo.Append(p.Key);
-
-                            parametersInfo.Append("|");
-                        }
-
-                        parametersInfo.AppendLine();
-                        parametersInfo.Append("|");
-                        foreach (var p in request.Parameters)
-                        {
-                            parametersInfo.Append("---");
-                            parametersInfo.Append("|");
-                        }
-
-                        parametersInfo.AppendLine();
-                        parametersInfo.Append("|");
-                        foreach (var p in request.Parameters)
-                        {
-                            parametersInfo.Append("**");
-                            parametersInfo.Append(p.Value);
-                            parametersInfo.Append("**");
-
-                            parametersInfo.Append("|");
-                        }
-
-                        if (string.IsNullOrEmpty(request.Description))
-                        {
-                            request.Description = parametersInfo.ToString();
-                        }
-                        else
-                        {
-                            request.Description = parametersInfo.ToString() + Environment.NewLine + Environment.NewLine + request.Description;
-                        }
                     }
 
-                    var eventArg = new TestItemStartedEventArgs(_service, request, currentFeature, this.FeatureContext, this.ScenarioContext);
-                    OrangebeardAddIn.OnBeforeScenarioStarted(this, eventArg);
-
-                    if (!eventArg.Canceled)
+                    parametersInfo.AppendLine();
+                    parametersInfo.Append("|");
+                    foreach (var unused in parameters)
                     {
-                        var currentScenario = currentFeature.StartChildTestReporter(request);
-                        OrangebeardAddIn.SetScenarioTestReporter(this.ScenarioContext, currentScenario);
+                        parametersInfo.Append("---");
+                        parametersInfo.Append("|");
+                    }
 
-                        OrangebeardAddIn.OnAfterScenarioStarted(this, new TestItemStartedEventArgs(_service, request, currentFeature, this.FeatureContext, this.ScenarioContext));
+                    parametersInfo.AppendLine();
+                    parametersInfo.Append("|");
+                    foreach (var p in parameters)
+                    {
+                        parametersInfo.Append("**");
+                        parametersInfo.Append(p.Value);
+                        parametersInfo.Append("**");
+
+                        parametersInfo.Append("|");
+                    }
+
+                    if (string.IsNullOrEmpty(startTest.Description))
+                    {
+                        startTest.Description = parametersInfo.ToString();
+                    }
+                    else
+                    {
+                        startTest.Description = parametersInfo + Environment.NewLine + Environment.NewLine +
+                                                startTest.Description;
                     }
                 }
+
+                var eventArg = new TestStartedEventArgs(_client, startTest);
+                OrangebeardAddIn.OnBeforeScenarioStarted(this, eventArg);
+
+                if (eventArg.Canceled) return;
+
+                var currentScenario = _client.StartTest(startTest);
+                OrangebeardAddIn.SetScenarioGuid(this.ScenarioContext, currentScenario);
+
+                OrangebeardAddIn.OnAfterScenarioStarted(this,
+                    new TestStartedEventArgs(_client, startTest));
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
         }
 
@@ -332,53 +283,54 @@ namespace Orangebeard.SpecFlowPlugin
         {
             try
             {
-                var currentScenario = OrangebeardAddIn.GetScenarioTestReporter(this.ScenarioContext);
-
-                if (currentScenario != null)
+                var currentScenario = OrangebeardAddIn.GetScenarioGuid(this.ScenarioContext);
+                
+                if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep)
                 {
-
-                    
-                    if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep)
+                    _ = _client.Log(new Log
                     {
-                        currentScenario.Log(new CreateLogItemRequest
-                        {
-                            Level = LogLevel.Error,
-                            Time = DateTime.UtcNow,
-                            Text = new MissingStepDefinitionException().Message
-                        });
-                    }
-
-                    var status = this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.OK ? Status.Passed 
-                        : this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.Skipped || 
-                            this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep ? Status.Skipped
-                            : Status.Failed;
-
-                    var request = new FinishTestItemRequest
-                    {
-                        EndTime = DateTime.UtcNow,
-                        Status = status
-                    };
-
-                    var eventArg = new TestItemFinishedEventArgs(_service, request, currentScenario, this.FeatureContext, this.ScenarioContext);
-                    OrangebeardAddIn.OnBeforeScenarioFinished(this, eventArg);
-
-                    if (!eventArg.Canceled)
-                    {
-                        currentScenario.Finish(request);
-
-                        OrangebeardAddIn.OnAfterScenarioFinished(this, new TestItemFinishedEventArgs(_service, request, currentScenario, this.FeatureContext, this.ScenarioContext));
-
-                        OrangebeardAddIn.RemoveScenarioTestReporter(this.ScenarioContext, currentScenario);
-                    }
+                        TestRunUUID = _testrunGuid,
+                        TestUUID = currentScenario,
+                        Message = new MissingStepDefinitionException().Message,
+                        LogLevel = LogLevel.ERROR,
+                        LogTime = DateTime.UtcNow,
+                        LogFormat = LogFormat.PLAIN_TEXT
+                    });
                 }
+
+                var status = ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.OK
+                    ? TestStatus.PASSED
+                    : ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.Skipped ||
+                      ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.UndefinedStep
+                        ? TestStatus.SKIPPED
+                        : TestStatus.FAILED;
+
+                var finishTest = new FinishTest
+                {
+                    TestRunUUID = _testrunGuid,
+                    EndTime = DateTime.UtcNow,
+                    Status = status
+                };
+
+                var eventArg = new TestFinishedEventArgs(currentScenario, _client, finishTest);
+                OrangebeardAddIn.OnBeforeScenarioFinished(this, eventArg);
+
+                if (eventArg.Canceled) return;
+
+                _client.FinishTest(currentScenario, finishTest);
+
+                OrangebeardAddIn.OnAfterScenarioFinished(this,
+                    new TestFinishedEventArgs(currentScenario, _client, finishTest));
+
+                OrangebeardAddIn.RemoveScenarioGuid(this.ScenarioContext, currentScenario);
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
             finally
             {
-                ContextAwareLogHandler.ActiveScenarioContext = null;
+                ContextHandler.ActiveScenarioContext = null;
             }
         }
 
@@ -387,45 +339,47 @@ namespace Orangebeard.SpecFlowPlugin
         {
             try
             {
-                ContextAwareLogHandler.ActiveStepContext = this.StepContext;
+                ContextHandler.ActiveStepContext = this.StepContext;
 
-                var currentScenario = OrangebeardAddIn.GetScenarioTestReporter(this.ScenarioContext);
+                var currentScenario = OrangebeardAddIn.GetScenarioGuid(this.ScenarioContext);
 
-                var stepInfoRequest = new StartTestItemRequest
+                var startStep = new StartStep
                 {
-                    Name = this.StepContext.StepInfo.GetCaption(),
-                    StartTime = DateTime.UtcNow,
-                    Type = TestItemType.Step,
-                    HasStats = false
+                    TestRunUUID = _testrunGuid,
+                    TestUUID = currentScenario,
+                    StepName = StepContext.StepInfo.GetCaption(),
+                    StartTime = PreciseUtcTime.UtcNow
                 };
 
-                var eventArg = new StepStartedEventArgs(_service, stepInfoRequest, currentScenario, this.FeatureContext, this.ScenarioContext, this.StepContext);
+                var eventArg = new StepStartedEventArgs(_client, startStep);
                 OrangebeardAddIn.OnBeforeStepStarted(this, eventArg);
 
-                if (!eventArg.Canceled)
+                if (eventArg.Canceled) return;
+
+                var step = _client.StartStep(startStep);
+                OrangebeardAddIn.SetStepGuid(this.StepContext, step);
+
+                // step parameters
+                var formattedParameters = this.StepContext.StepInfo.GetFormattedParameters();
+                if (!string.IsNullOrEmpty(formattedParameters))
                 {
-                    var stepReporter = currentScenario.StartChildTestReporter(stepInfoRequest);
-                    OrangebeardAddIn.SetStepTestReporter(this.StepContext, stepReporter);
-
-                    // step parameters
-                    var formattedParameters = this.StepContext.StepInfo.GetFormattedParameters();
-                    if (!string.IsNullOrEmpty(formattedParameters))
+                    _client.Log(new Log
                     {
-                        stepReporter.Log(new CreateLogItemRequest
-                        {
-                            Text = formattedParameters,
-                            Level = LogLevel.Info,
-                            Time = DateTime.UtcNow,
-                            Format = LogFormat.MARKDOWN
-                        });
-                    }
-
-                    OrangebeardAddIn.OnAfterStepStarted(this, eventArg);
+                        TestRunUUID = _testrunGuid,
+                        TestUUID = currentScenario,
+                        StepUUID = step,
+                        Message = formattedParameters,
+                        LogLevel = LogLevel.INFO,
+                        LogTime = DateTime.UtcNow,
+                        LogFormat = LogFormat.MARKDOWN
+                    });
                 }
+
+                OrangebeardAddIn.OnAfterStepStarted(this, eventArg);
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
         }
 
@@ -434,58 +388,64 @@ namespace Orangebeard.SpecFlowPlugin
         {
             try
             {
-                var currentStep = OrangebeardAddIn.GetStepTestReporter(this.StepContext);
+                var currentScenario = OrangebeardAddIn.GetScenarioGuid(ScenarioContext);
+                var currentStep = OrangebeardAddIn.GetStepGuid(StepContext);
 
-                if (this.StepContext.Status == ScenarioExecutionStatus.TestError)
+                if (StepContext.Status == ScenarioExecutionStatus.TestError)
                 {
-                    currentStep.Log(new CreateLogItemRequest
+                    _client.Log(new Log
                     {
-                        Level = LogLevel.Error,
-                        Time = DateTime.UtcNow,
-                        Text = this.ScenarioContext.TestError?.ToString()
+                        TestRunUUID = _testrunGuid,
+                        TestUUID = currentScenario,
+                        StepUUID = currentStep.Value,
+                        Message = ScenarioContext.TestError?.ToString(),
+                        LogLevel = LogLevel.ERROR,
+                        LogTime = DateTime.UtcNow,
+                        LogFormat = LogFormat.PLAIN_TEXT
                     });
                 }
                 else if (this.StepContext.Status == ScenarioExecutionStatus.BindingError)
                 {
-                    currentStep.Log(new CreateLogItemRequest
+                    _client.Log(new Log
                     {
-                        Level = LogLevel.Error,
-                        Time = DateTime.UtcNow,
-                        Text = this.ScenarioContext.TestError?.Message
+                        TestRunUUID = _testrunGuid,
+                        TestUUID = currentScenario,
+                        StepUUID = currentStep.Value,
+                        Message = ScenarioContext.TestError?.Message,
+                        LogLevel = LogLevel.ERROR,
+                        LogTime = DateTime.UtcNow,
+                        LogFormat = LogFormat.PLAIN_TEXT
                     });
-                }              
+                }
 
-                var stepFinishRequest = new FinishTestItemRequest
+                var finishStep = new FinishStep
                 {
-                    EndTime = DateTime.UtcNow
+                    TestRunUUID = _testrunGuid,
+                    EndTime = PreciseUtcTime.UtcNow,
+                    Status = TestStatus.PASSED
                 };
 
-                if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.TestError)
-                {
-                    stepFinishRequest.Status = Status.Failed;
-                } 
-                else if (this.ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.Skipped)
-                {
-                    stepFinishRequest.Status = Status.Skipped;
-                }
+                if (ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.TestError)
+                    finishStep.Status = TestStatus.FAILED;
+                else if (ScenarioContext.ScenarioExecutionStatus == ScenarioExecutionStatus.Skipped)
+                    finishStep.Status = TestStatus.SKIPPED;
 
-                var eventArg = new StepFinishedEventArgs(_service, stepFinishRequest, currentStep, this.FeatureContext, this.ScenarioContext, this.StepContext);
+                var eventArg = new StepFinishedEventArgs(currentStep.Value, _client, finishStep);
                 OrangebeardAddIn.OnBeforeStepFinished(this, eventArg);
 
-                if (!eventArg.Canceled)
-                {
-                    currentStep.Finish(stepFinishRequest);
-                    OrangebeardAddIn.RemoveStepTestReporter(this.StepContext, currentStep);
-                    OrangebeardAddIn.OnAfterStepFinished(this, eventArg);
-                }
+                if (eventArg.Canceled) return;
+                _client.FinishStep(currentStep.Value, finishStep);
+               
+                OrangebeardAddIn.RemoveStepGuid(this.StepContext, currentStep.Value);
+                OrangebeardAddIn.OnAfterStepFinished(this, eventArg);
             }
             catch (Exception exp)
             {
-                _traceLogger.Error(exp.ToString());
+                Logger.Error(exp.ToString());
             }
             finally
             {
-                ContextAwareLogHandler.ActiveStepContext = null;
+                ContextHandler.ActiveStepContext = null;
             }
         }
     }

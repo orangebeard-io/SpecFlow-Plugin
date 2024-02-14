@@ -1,8 +1,8 @@
-﻿using Orangebeard.Shared.Configuration;
-using Orangebeard.Shared.Internal.Logging;
-using Orangebeard.SpecFlowPlugin;
-using System;
+﻿using System;
 using System.IO;
+using Orangebeard.Client.V3.ClientUtils.Logging;
+using Orangebeard.Client.V3.OrangebeardConfig;
+using Orangebeard.SpecFlowPlugin;
 using TechTalk.SpecFlow.Bindings;
 using TechTalk.SpecFlow.Infrastructure;
 using TechTalk.SpecFlow.Plugins;
@@ -16,7 +16,7 @@ namespace Orangebeard.SpecFlowPlugin
     /// </summary>
     internal class Plugin : IRuntimePlugin
     {
-        private ITraceLogger _traceLogger;
+        private ILogger _logger;
 
         public static IConfiguration Config { get; set; }
 
@@ -24,27 +24,26 @@ namespace Orangebeard.SpecFlowPlugin
         {
             var currentDirectory = Path.GetDirectoryName(new Uri(typeof(Plugin).Assembly.CodeBase).LocalPath);
 
-            _traceLogger = TraceLogManager.Instance.WithBaseDir(currentDirectory).GetLogger<Plugin>();
+            _logger = LogManager.Instance.WithBaseDir(currentDirectory).GetLogger<Plugin>();
 
             Config = new ConfigurationBuilder().AddDefaults(currentDirectory).Build();
 
             var isEnabled = Config.GetValue("Enabled", true);
 
-            if (isEnabled)
+            if (!isEnabled) return;
+            
+            runtimePluginEvents.CustomizeGlobalDependencies += (sender, e) =>
             {
-                runtimePluginEvents.CustomizeGlobalDependencies += (sender, e) =>
-                {
-                    e.SpecFlowConfiguration.AdditionalStepAssemblies.Add("Orangebeard.SpecFlowPlugin");
-                    e.ObjectContainer.RegisterTypeAs<SafeBindingInvoker, IBindingInvoker>();
-                    e.ObjectContainer.RegisterTypeAs<OrangebeardOutputHelper, ISpecFlowOutputHelper>();
-                };
+                e.SpecFlowConfiguration.AdditionalStepAssemblies.Add("Orangebeard.SpecFlowPlugin");
+                e.ObjectContainer.RegisterTypeAs<SafeBindingInvoker, IBindingInvoker>();
+                e.ObjectContainer.RegisterTypeAs<OrangebeardOutputHelper, ISpecFlowOutputHelper>();
+            };
 
-                runtimePluginEvents.CustomizeScenarioDependencies += (sender, e) =>
-                {
-                    e.ObjectContainer.RegisterTypeAs<SkippedStepsHandler, ISkippedStepHandler>();
-                    e.ObjectContainer.RegisterTypeAs<OrangebeardOutputHelper, ISpecFlowOutputHelper>();
-                };
-            }
+            runtimePluginEvents.CustomizeScenarioDependencies += (sender, e) =>
+            {
+                e.ObjectContainer.RegisterTypeAs<SkippedStepsHandler, ISkippedStepHandler>();
+                e.ObjectContainer.RegisterTypeAs<OrangebeardOutputHelper, ISpecFlowOutputHelper>();
+            };
         }
     }
 }

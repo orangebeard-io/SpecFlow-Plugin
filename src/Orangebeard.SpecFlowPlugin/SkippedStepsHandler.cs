@@ -1,9 +1,8 @@
-﻿using Orangebeard.SpecFlowPlugin.Extensions;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using Orangebeard.Client.V3.Entity;
+using Orangebeard.Client.V3.Entity.Step;
+using Orangebeard.SpecFlowPlugin.Extensions;
+using Orangebeard.SpecFlowPlugin.Util;
 using TechTalk.SpecFlow;
 using TechTalk.SpecFlow.Infrastructure;
 
@@ -13,20 +12,28 @@ namespace Orangebeard.SpecFlowPlugin
     {
         public void Handle(ScenarioContext scenarioContext)
         {
-            var scenarioReporter = OrangebeardAddIn.GetScenarioTestReporter(scenarioContext);
+            var context = OrangebeardAddIn.GetCurrentContext();
 
-            var skippedStepReporter = scenarioReporter.StartChildTestReporter(new Client.Abstractions.Requests.StartTestItemRequest
+            var skippedStep = new StartStep
             {
-                Name = scenarioContext.StepContext.StepInfo.GetCaption(),
-                StartTime = DateTime.UtcNow,
-                Type = Client.Abstractions.Models.TestItemType.Step,
-                HasStats = false
-            });
+                TestRunUUID = context.testrun,
+                TestUUID = context.test,
+                StepName = scenarioContext.StepContext.StepInfo.GetCaption(),
+                StartTime = PreciseUtcTime.UtcNow
+            };
+
+            if (context.step.HasValue)
+            {
+                skippedStep.ParentStepUUID = context.step.Value;
+            }
+
+            var skippedStepGuid = OrangebeardHooks.GetClient().StartStep(skippedStep);
             
-            skippedStepReporter.Finish(new Client.Abstractions.Requests.FinishTestItemRequest
+            OrangebeardHooks.GetClient().FinishStep(skippedStepGuid, new FinishStep
             {
-                EndTime = DateTime.UtcNow,
-                Status = Client.Abstractions.Models.Status.Skipped
+                TestRunUUID = context.testrun,
+                Status = TestStatus.SKIPPED,
+                EndTime = PreciseUtcTime.UtcNow
             });
         }
     }

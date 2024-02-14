@@ -1,40 +1,21 @@
 ﻿using System;
-using Orangebeard.Client.Abstractions;
-using Orangebeard.Client.Abstractions.Requests;
-using Orangebeard.Shared.Reporter;
-using TechTalk.SpecFlow;
+using Orangebeard.Client.V3;
+using Orangebeard.Client.V3.Entity.Step;
 
 namespace Orangebeard.SpecFlowPlugin.EventArguments
 {
     public class StepFinishedEventArgs : EventArgs
     {
-        public StepFinishedEventArgs(IClientService service, FinishTestItemRequest request, ITestReporter testReporter)
+        public StepFinishedEventArgs(Guid stepGuid, OrangebeardAsyncV3Client client, FinishStep request)
         {
-            Service = service;
-            FinishTestItemRequest = request;
-            TestReporter = testReporter;
+            StepGuid = stepGuid;
+            Client = client;
+            FinishStepRequest = request;
         }
 
-        public StepFinishedEventArgs(IClientService service, FinishTestItemRequest request, ITestReporter testReporter, FeatureContext featureContext, ScenarioContext scenarioContext, ScenarioStepContext stepContext)
-            : this(service, request, testReporter)
-        {
-            FeatureContext = featureContext;
-            ScenarioContext = scenarioContext;
-            StepContext = stepContext;
-        }
-
-        public IClientService Service { get; }
-
-        public FinishTestItemRequest FinishTestItemRequest { get; }
-
-        public ITestReporter TestReporter { get; }
-
-        public FeatureContext FeatureContext { get; }
-
-        public ScenarioContext ScenarioContext { get; }
-
-        public ScenarioStepContext StepContext { get; }
-
+        public Guid StepGuid { get; }
+        public OrangebeardAsyncV3Client Client { get; }
+        public FinishStep FinishStepRequest { get; }
         public bool Canceled { get; set; }
     }
 }

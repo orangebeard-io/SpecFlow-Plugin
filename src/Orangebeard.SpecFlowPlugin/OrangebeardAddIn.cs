@@ -1,105 +1,95 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using Orangebeard.Shared.Internal.Logging;
-using Orangebeard.Shared.Reporter;
+using Orangebeard.Client.V3.ClientUtils.Logging;
 using Orangebeard.SpecFlowPlugin.EventArguments;
+using Orangebeard.SpecFlowPlugin.LogHandler;
 using TechTalk.SpecFlow;
 
 namespace Orangebeard.SpecFlowPlugin
 {
     public class OrangebeardAddIn
     {
-        private static readonly ITraceLogger Logger = TraceLogManager.Instance.GetLogger<OrangebeardAddIn>();
-
-        private static ConcurrentDictionary<FeatureInfo, ITestReporter> FeatureTestReporters { get; } = new ConcurrentDictionary<FeatureInfo, ITestReporter>(new FeatureInfoEqualityComparer());
-
-        private static ConcurrentDictionary<FeatureInfo, int> FeatureThreadCount { get; } = new ConcurrentDictionary<FeatureInfo, int>(new FeatureInfoEqualityComparer());
-
-        private static ConcurrentDictionary<ScenarioInfo, ITestReporter> ScenarioTestReporters { get; } = new ConcurrentDictionary<ScenarioInfo, ITestReporter>();
-
-        private static ConcurrentDictionary<StepInfo, ITestReporter> StepTestReporters { get; } = new ConcurrentDictionary<StepInfo, ITestReporter>();
+        private static readonly ILogger Logger = LogManager.Instance.GetLogger<OrangebeardAddIn>();
+        private static ConcurrentDictionary<FeatureInfo, Guid> Suites { get; } = new ConcurrentDictionary<FeatureInfo, Guid>(new FeatureInfoEqualityComparer());
+        private static ConcurrentDictionary<FeatureInfo, int> SuiteThreadCount { get; } = new ConcurrentDictionary<FeatureInfo, int>(new FeatureInfoEqualityComparer());
+        private static ConcurrentDictionary<ScenarioInfo, Guid> Tests { get; } = new ConcurrentDictionary<ScenarioInfo, Guid>();
+        private static ConcurrentDictionary<StepInfo, Guid> Steps { get; } = new ConcurrentDictionary<StepInfo, Guid>();
 
         // key: log scope ID, value: according test reporter
-        public static ConcurrentDictionary<string, ITestReporter> LogScopes { get; } = new ConcurrentDictionary<string, ITestReporter>();
+        public static ConcurrentDictionary<string, Guid> LogScopes { get; } = new ConcurrentDictionary<string, Guid>();
 
-        public static ITestReporter GetFeatureTestReporter(FeatureContext context)
+        public static Guid? GetCurrentFeatureGuid(FeatureContext context)
         {
-            if (context != null && FeatureTestReporters.ContainsKey(context.FeatureInfo))
+            if (context != null && Suites.TryGetValue(context.FeatureInfo, out var guid))
             {
-                return FeatureTestReporters[context.FeatureInfo];
+                return guid;
             }
-            else
-            {
-                return null;
-            }
+
+            return null;
         }
 
-        internal static void SetFeatureTestReporter(FeatureContext context, ITestReporter reporter)
+        internal static void SetFeatureGuid(FeatureContext context, Guid guid)
         {
-            FeatureTestReporters[context.FeatureInfo] = reporter;
-            FeatureThreadCount[context.FeatureInfo] = 1;
+            Suites[context.FeatureInfo] = guid;
+            SuiteThreadCount[context.FeatureInfo] = 1;
         }
 
-        internal static void RemoveFeatureTestReporter(FeatureContext context, ITestReporter reporter)
+        internal static void RemoveFeatureGuid(FeatureContext context, Guid guid)
         {
-            FeatureTestReporters.TryRemove(context.FeatureInfo, out reporter);
-            FeatureThreadCount.TryRemove(context.FeatureInfo, out int count);
+            Suites.TryRemove(context.FeatureInfo, out guid);
+            SuiteThreadCount.TryRemove(context.FeatureInfo, out var count);
         }
 
         internal static int IncrementFeatureThreadCount(FeatureContext context)
         {
-            return FeatureThreadCount[context.FeatureInfo]
-                = FeatureThreadCount.ContainsKey(context.FeatureInfo) ? FeatureThreadCount[context.FeatureInfo] + 1 : 1;
+            return SuiteThreadCount[context.FeatureInfo]
+                = SuiteThreadCount.TryGetValue(context.FeatureInfo, out var value) ? value + 1 : 1;
         }
 
         internal static int DecrementFeatureThreadCount(FeatureContext context)
         {
-            return FeatureThreadCount[context.FeatureInfo]
-                = FeatureThreadCount.ContainsKey(context.FeatureInfo) ? FeatureThreadCount[context.FeatureInfo] - 1 : 0;
+            return SuiteThreadCount[context.FeatureInfo]
+                = SuiteThreadCount.TryGetValue(context.FeatureInfo, out var value) ? value - 1 : 0;
         }
 
-        public static ITestReporter GetScenarioTestReporter(ScenarioContext context)
+        public static Guid GetScenarioGuid(ScenarioContext context)
         {
-            if (context != null && ScenarioTestReporters.ContainsKey(context.ScenarioInfo))
+            if (context != null && Tests.TryGetValue(context.ScenarioInfo, out var reporter))
             {
-                return ScenarioTestReporters[context.ScenarioInfo];
+                return reporter;
             }
-            else
+
+            throw new InvalidContextException("No scenario started.");
+        }
+
+        internal static void SetScenarioGuid(ScenarioContext context, Guid guid)
+        {
+            Tests[context.ScenarioInfo] = guid;
+        }
+
+        internal static void RemoveScenarioGuid(ScenarioContext context, Guid guid)
+        {
+            Tests.TryRemove(context.ScenarioInfo, out guid);
+        }
+
+        public static Guid? GetStepGuid(ScenarioStepContext context)
+        {
+            if (context != null && Steps.TryGetValue(context.StepInfo, out var reporter))
             {
-                return null;
+                return reporter;
             }
+            
+            return null;
         }
 
-        internal static void SetScenarioTestReporter(ScenarioContext context, ITestReporter reporter)
+        internal static void SetStepGuid(ScenarioStepContext context, Guid guid)
         {
-            ScenarioTestReporters[context.ScenarioInfo] = reporter;
+            Steps[context.StepInfo] = guid;
         }
 
-        internal static void RemoveScenarioTestReporter(ScenarioContext context, ITestReporter reporter)
+        internal static void RemoveStepGuid(ScenarioStepContext context, Guid guid)
         {
-            ScenarioTestReporters.TryRemove(context.ScenarioInfo, out reporter);
-        }
-
-        public static ITestReporter GetStepTestReporter(ScenarioStepContext context)
-        {
-            if (context != null && StepTestReporters.ContainsKey(context.StepInfo))
-            {
-                return StepTestReporters[context.StepInfo];
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        internal static void SetStepTestReporter(ScenarioStepContext context, ITestReporter reporter)
-        {
-            StepTestReporters[context.StepInfo] = reporter;
-        }
-
-        internal static void RemoveStepTestReporter(ScenarioStepContext context, ITestReporter reporter)
-        {
-            StepTestReporters.TryRemove(context.StepInfo, out reporter);
+            Steps.TryRemove(context.StepInfo, out guid);
         }
 
         public delegate void InitializingHandler(object sender, InitializingEventArgs e);
@@ -176,12 +166,12 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        public delegate void FeatureStartedHandler(object sender, TestItemStartedEventArgs e);
+        public delegate void FeatureStartedHandler(object sender, SuiteStartedEventArgs e);
 
         public static event FeatureStartedHandler BeforeFeatureStarted;
         public static event FeatureStartedHandler AfterFeatureStarted;
 
-        internal static void OnBeforeFeatureStarted(object sender, TestItemStartedEventArgs eventArg)
+        internal static void OnBeforeFeatureStarted(object sender, SuiteStartedEventArgs eventArg)
         {
             try
             {
@@ -193,7 +183,7 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        internal static void OnAfterFeatureStarted(object sender, TestItemStartedEventArgs eventArg)
+        internal static void OnAfterFeatureStarted(object sender, SuiteStartedEventArgs eventArg)
         {
             try
             {
@@ -205,41 +195,12 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        public delegate void FeatureFinishedHandler(object sender, TestItemFinishedEventArgs e);
-
-        public static event FeatureFinishedHandler BeforeFeatureFinished;
-        public static event FeatureFinishedHandler AfterFeatureFinished;
-
-        internal static void OnBeforeFeatureFinished(object sender, TestItemFinishedEventArgs eventArg)
-        {
-            try
-            {
-                BeforeFeatureFinished?.Invoke(sender, eventArg);
-            }
-            catch (Exception exp)
-            {
-                Logger.Error($"Exception occured in {nameof(OnBeforeFeatureFinished)} event handler: {exp}");
-            }
-        }
-
-        internal static void OnAfterFeatureFinished(object sender, TestItemFinishedEventArgs eventArg)
-        {
-            try
-            {
-                AfterFeatureFinished?.Invoke(sender, eventArg);
-            }
-            catch (Exception exp)
-            {
-                Logger.Error($"Exception occured in {nameof(OnAfterFeatureFinished)} event handler: {exp}");
-            }
-        }
-
-        public delegate void ScenarioStartedHandler(object sender, TestItemStartedEventArgs e);
+        public delegate void ScenarioStartedHandler(object sender, TestStartedEventArgs e);
 
         public static event ScenarioStartedHandler BeforeScenarioStarted;
         public static event ScenarioStartedHandler AfterScenarioStarted;
 
-        internal static void OnBeforeScenarioStarted(object sender, TestItemStartedEventArgs eventArg)
+        internal static void OnBeforeScenarioStarted(object sender, TestStartedEventArgs eventArg)
         {
             try
             {
@@ -251,7 +212,7 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        internal static void OnAfterScenarioStarted(object sender, TestItemStartedEventArgs eventArg)
+        internal static void OnAfterScenarioStarted(object sender, TestStartedEventArgs eventArg)
         {
             try
             {
@@ -263,12 +224,12 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        public delegate void ScenarioFinishedHandler(object sender, TestItemFinishedEventArgs e);
+        public delegate void ScenarioFinishedHandler(object sender, TestFinishedEventArgs e);
 
         public static event ScenarioFinishedHandler BeforeScenarioFinished;
         public static event ScenarioFinishedHandler AfterScenarioFinished;
 
-        internal static void OnBeforeScenarioFinished(object sender, TestItemFinishedEventArgs eventArg)
+        internal static void OnBeforeScenarioFinished(object sender, TestFinishedEventArgs eventArg)
         {
             try
             {
@@ -280,7 +241,7 @@ namespace Orangebeard.SpecFlowPlugin
             }
         }
 
-        internal static void OnAfterScenarioFinished(object sender, TestItemFinishedEventArgs eventArg)
+        internal static void OnAfterScenarioFinished(object sender, TestFinishedEventArgs eventArg)
         {
             try
             {
@@ -348,6 +309,15 @@ namespace Orangebeard.SpecFlowPlugin
             {
                 Logger.Error($"Exception occured in {nameof(OnAfterStepFinished)} event handler: {exp}");
             }
+        }
+        
+        internal static (Guid testrun, Guid test, Guid? step) GetCurrentContext()
+        {
+            var testRun = OrangebeardHooks.GetTestRunGuid();
+            var currentTest = GetScenarioGuid(ContextHandler.ActiveScenarioContext);
+            var currentStep = GetStepGuid(ContextHandler.ActiveStepContext);
+
+            return (testRun, test: currentTest, step: currentStep);
         }
     }
 }

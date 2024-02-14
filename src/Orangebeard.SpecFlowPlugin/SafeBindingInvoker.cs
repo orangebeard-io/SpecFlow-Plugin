@@ -12,11 +12,12 @@ namespace Orangebeard.SpecFlowPlugin
 {
     internal class SafeBindingInvoker : BindingInvoker
     {
-        public SafeBindingInvoker(SpecFlowConfiguration specFlowConfiguration, IErrorProvider errorProvider, ISynchronousBindingDelegateInvoker synchronousBindingDelegateInvoker)
-            : base(specFlowConfiguration, errorProvider, synchronousBindingDelegateInvoker)
+        public SafeBindingInvoker(SpecFlowConfiguration reqnrollConfiguration, IErrorProvider errorProvider,
+            ISynchronousBindingDelegateInvoker synchronousBindingDelegateInvoker)
+            : base(reqnrollConfiguration, errorProvider, synchronousBindingDelegateInvoker)
         {
         }
-
+        
         public override object InvokeBinding(IBinding binding, IContextManager contextManager, object[] arguments,
             ITestTracer testTracer, out TimeSpan duration)
         {
@@ -39,7 +40,7 @@ namespace Orangebeard.SpecFlowPlugin
                     throw;
                 }
 
-                var hookBinding = binding as IHookBinding;
+                var hookBinding = (IHookBinding)binding;
 
                 if (hookBinding.HookType == HookType.BeforeScenario
                     || hookBinding.HookType == HookType.BeforeScenarioBlock
@@ -81,7 +82,8 @@ namespace Orangebeard.SpecFlowPlugin
 
         private static void PreserveStackTrace(Exception ex)
         {
-            typeof(Exception).GetMethod("InternalPreserveStackTrace", BindingFlags.Instance | BindingFlags.NonPublic)?.Invoke(ex, new object[0]);
+            typeof(Exception).GetMethod("InternalPreserveStackTrace", BindingFlags.Instance | BindingFlags.NonPublic)
+                ?.Invoke(ex, Array.Empty<object>());
         }
     }
 }

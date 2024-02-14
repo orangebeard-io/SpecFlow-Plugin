@@ -14,15 +14,10 @@ namespace Orangebeard.SpecFlowPlugin
                 return true;
             }
 
-            if (x?.Title == y?.Title
-                && x?.Description == y?.Description
-                && x?.GenerationTargetLanguage == y?.GenerationTargetLanguage
-                && x.Tags.SequenceEqual(y.Tags))
-            {
-                return true;
-            }
-
-            return false;
+            return x?.Title == y?.Title
+                   && x?.Description == y?.Description
+                   && x?.GenerationTargetLanguage == y?.GenerationTargetLanguage
+                   && x.Tags.SequenceEqual(y.Tags);
         }
 
         public int GetHashCode(FeatureInfo obj)

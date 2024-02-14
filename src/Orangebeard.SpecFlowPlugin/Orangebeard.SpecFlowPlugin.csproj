@@ -1,9 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net462;netstandard2.1;netcoreapp3.1</TargetFrameworks>
+    <TargetFrameworks>netstandard2.1;net47</TargetFrameworks>
     <PackageId>Orangebeard.SpecFlow</PackageId>
-    <Version>1.1.1.0</Version>
+    <Version>2.0.0</Version>
     
     <Description>Plugin to output SpecFlow test logging into Orangebeard</Description>
     <Authors>Team Soju</Authors>
@@ -11,7 +11,7 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageIcon>beard.png</PackageIcon>
     <PackageProjectUrl>https://orangebeard.io</PackageProjectUrl>
-
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryType>GitHub</RepositoryType>
     <RepositoryUrl>https://github.com/orangebeard-io/SpecFlow-Plugin</RepositoryUrl>
 
@@ -47,13 +47,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Orangebeard.Client" Version="2.1.5" />
+    <PackageReference Include="Orangebeard.Client" Version="3.0.1" />
     <PackageReference Include="SpecFlow" Version="3.9.74" />
   </ItemGroup>
 
   <ItemGroup>
-
     <None Include="..\..\beard.png" Pack="true" PackagePath="\" Visible="false" />
+    <None Include="..\..\README.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
 </Project>
