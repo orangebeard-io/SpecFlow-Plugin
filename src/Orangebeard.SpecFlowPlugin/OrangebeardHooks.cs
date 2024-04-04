@@ -218,6 +218,12 @@ namespace Orangebeard.SpecFlowPlugin
                     testNameWithParams.Append(" (");
                     testNameWithParams.Append(string.Join(", ", parameters.Select(kv => kv.Value)));
                     testNameWithParams.Append(")");
+                    
+                    if (testNameWithParams.Length > 1024)
+                    {
+                        testNameWithParams.Length = 1021;
+                        testNameWithParams.Append("...");
+                    }
 
                     startTest.TestName = testNameWithParams.ToString();
 
